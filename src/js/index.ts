@@ -37,7 +37,9 @@ cvs.onmousedown = function ({ offsetX, offsetY }) {
     ctx.lineTo(offsetX, offsetY)
     ctx.stroke()
   }
-  cvs.onmouseup = function () {
+  cvs.onmouseleave = end
+  cvs.onmouseup = end
+  function end() {
     cvs.onmousemove = null
     cvs.onmouseup = null
   }
@@ -57,11 +59,7 @@ penSize.onchange = function <penSize>() {
 
 function test(pos: number[][], count: number) {
   if (count === 0) return
-  ctx.save()
-  ctx.font = '30px arial'
-  ctx.fillStyle = 'blue'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
+  // ctx.save()
   ctx.beginPath()
   const newPos = setPos(pos)
   newPos.forEach(([x, y], i) => {
@@ -79,4 +77,38 @@ function test(pos: number[][], count: number) {
 
   test(newPos, --count)
 }
-test(pos, 10)
+// test(pos, 10)
+
+function drawCircle(n = 5) {
+  ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 5, 0, Math.PI * 2)
+  ctx.fillStyle = '#000'
+  ctx.fill()
+  for (let i = 0; i < n; i++) {
+    ctx.beginPath()
+    ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - i * 15, 200 - i * 15, 0, Math.PI * 2)
+
+    // ctx.stroke()
+    i % 2 ? ctx.fillStyle = 'yellow' : ctx.fillStyle = 'pink'
+    ctx.fill()
+
+  }
+
+  for (let i = 0; i < n; i++) {
+    ctx.beginPath()
+    ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 100 + i * 15, 100 - i * 15, 0, Math.PI * 2)
+    i % 2 ? ctx.fillStyle = 'pink' : ctx.fillStyle = 'yellow'
+    ctx.fill()
+
+  }
+}
+drawCircle(6)
+
+
+let img = new Image()
+img.src = cvs.toDataURL()
+
+document.body.appendChild(img)
+img.animate({
+  transform: ['rotate(0deg)', 'rotate(360deg)']
+}, { duration: 2000, iterations: Infinity })
+ctx.restore()
