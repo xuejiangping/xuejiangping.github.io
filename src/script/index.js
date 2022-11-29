@@ -4,18 +4,10 @@ const clearBtn = document.getElementById('clearBtn');
 const ctx = cvs.getContext('2d');
 const penSize = document.getElementById('stroke');
 const penColor = document.getElementById('color');
+const redoBtn = document.getElementById('redo');
+const undoBtn = document.getElementById('undo');
 const CANVAS_WIDTH = cvs.width = 600;
 const CANVAS_HEIGHT = cvs.height = 600;
-// clearBtn?.animate(
-//   {
-//     easing: ['ease-in', 'ease-out'],
-//     color: ['red', 'blue', 'pink'],
-//     transform: ['translateY(10px)', 'scale(1.5)', 'translateY(100px)',
-//       'translateY(0px)', 'scale(1)'
-//     ]
-//   }, {
-//   duration: 2000, iterations: Infinity
-// })
 //--------------------------------------------------------------------
 const options = {
     lineWidth: 1,
@@ -39,9 +31,6 @@ cvs.onmousedown = function ({ offsetX, offsetY }) {
     }
 };
 clearBtn.onclick = cl;
-function cl() {
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-}
 penColor.onchange = function () {
     ctx.strokeStyle = this.value;
 };
@@ -49,6 +38,9 @@ penSize.onchange = function () {
     ctx.lineWidth = this.value;
     this.title = this.value;
 };
+function cl() {
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
 function test(pos, count) {
     if (count === 0)
         return;
@@ -62,7 +54,6 @@ function test(pos, count) {
     // ctx.stroke()
     ctx.closePath();
     ctx.stroke();
-    ctx.restore();
     test(newPos, --count);
 }
 // test(pos, 10)
@@ -91,4 +82,3 @@ document.body.appendChild(img);
 img.animate({
     transform: ['rotate(0deg)', 'rotate(360deg)']
 }, { duration: 2000, iterations: Infinity });
-ctx.restore();

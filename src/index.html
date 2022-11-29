@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="./style/index.css">
-    <script type="module" src="./js/index.js"></script>
+    <script type="module" src="./script/index.js"></script>
 
   </head>
 
@@ -16,6 +16,8 @@
       <button id="clearBtn">清除画布</button>
       <label>画笔粗细： <input type="range" id="stroke" min="1" max="30"></label>
       <label>画笔颜色： <input type="color" id="color"></label>
+      <button id="undo">撤销</button>
+      <button id="redo">恢复</button>
     </div>
     <canvas id="cvs1"></canvas>
 
