@@ -1,15 +1,15 @@
-import { setPos, pos } from './index-aaaaaaaaaaa.js'
+import { setPos, pos } from './aaa.js'
 const cvs = <HTMLCanvasElement>document.getElementById('cvs1')
 const clearBtn = <HTMLButtonElement>document.getElementById('clearBtn')
-const ctx = <CanvasRenderingContext2D>cvs.getContext('2d')
+const ctx = <CanvasRenderingContext2D>cvs.getContext('2d', { willReadFrequently: true })
 const penSize = <HTMLInputElement>document.getElementById('stroke')
 const penColor = <HTMLInputElement>document.getElementById('color')
-const redoBtn = document.getElementById('redo')
-const undoBtn = document.getElementById('undo')
+const redoBtn = <HTMLButtonElement>document.getElementById('redo')
+const undoBtn = <HTMLButtonElement>document.getElementById('undo')
 
 const CANVAS_WIDTH = cvs.width = 600
 const CANVAS_HEIGHT = cvs.height = 600
-
+const redoList: ImageData[] = [], undoList: ImageData[] = []
 
 //--------------------------------------------------------------------
 const options = {
@@ -35,9 +35,29 @@ cvs.onmousedown = function ({ offsetX, offsetY }) {
   function end() {
     cvs.onmousemove = null
     cvs.onmouseup = null
+    cvs.onmouseleave = null
+    undoList.push(ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT))
+
   }
 }
 
+undoBtn.onclick = function () {
+  let n = undoList.length
+  console.log(undoList, n)
+  if (n > 0) {
+    cl()
+    const imgData = <ImageData>undoList.pop()
+    redoList.push(imgData)
+    ctx.putImageData(imgData, 0, 0)
+  }
+
+
+}
+redoBtn.onclick = function () {
+  ctx.putImageData(<ImageData>redoList.pop(), 0, 0)
+
+
+}
 clearBtn.onclick = cl
 
 penColor.onchange = function <penColor>() {
@@ -96,9 +116,12 @@ function drawCircle(n = 5) {
 drawCircle(6)
 
 
-let img = new Image()
-img.src = cvs.toDataURL()
-document.body.appendChild(img)
-img.animate({
-  transform: ['rotate(0deg)', 'rotate(360deg)']
-}, { duration: 2000, iterations: Infinity })
+let img = (function (img) {
+
+  img.src = cvs.toDataURL()
+  document.body.appendChild(img)
+  img.animate({
+    transform: ['rotate(0deg)', 'rotate(360deg)']
+  }, { duration: 2000, iterations: Infinity }).cancel()
+  return img
+})(new Image)

@@ -1,5 +1,5 @@
 let scriptText = `
-  console.log(123)
+  
 `
 
 let sUrl = URL.createObjectURL(new Blob([scriptText]))
@@ -31,3 +31,4 @@ export {
   pos,
   setPos
 }
+
