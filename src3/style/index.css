@@ -1,0 +1,16 @@
+@media screen and (max-width: 600px) {
+  body {
+    background-color: pink;
+  }
+}
+@media screen and (max-height: 600px) {
+  body {
+    color: red;
+  }
+}
+#cvs {
+  border: 1px solid;
+}
+#cvs ::after {
+  content: attr();
+}
