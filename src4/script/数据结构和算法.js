@@ -75,14 +75,15 @@ function selectSort(arr) {
  * 1.取数组第一个，比它小的放左边，比它大的放右边
  */
 function quickSort(arr) {
-  const leader = arr[0]
+  if (arr.length <= 1) return arr
+  const middleIndex = Math.floor(arr.length / 2)
+  const leader = arr.splice(middleIndex,1)[0]
   let left = [],right = []
-  for (let i = 1; i < arr.length; i++) {
-    arr[i] < leader ? left.push(arr[i]) : right.push(arr[i])
+  for (let i = 0; i < arr.length; i++) {
+    let item = arr[i]
+    item < leader ? left.push(item) : right.push(item)
   }
-  if (left.length > 1) left = quickSort(left)
-  if (right.length > 1) right = quickSort(right)
-  return left.concat(leader,right)
+  return quickSort(left).concat(leader,quickSort(right))
 }
 // let randomArr = randomIntArray(10)
 // console.log('randomArr',randomArr)
@@ -94,14 +95,9 @@ function quickSort(arr) {
  */
 
 function quickSort2(arr,start,end) {
+  if (arr.length <= 1) return arr
   let leader = arr[0]
   let left = start,right = end
-  // for (let i = 0; i < arr.length; i++) {
-  //   if (arr[i] < leader) left++
-  // }
-  // for (let j = arr.length - 1; j >= 0; j--) {
-  //   if (arr[j] > leader) right--
-  // }
   while (left < right) {
     while (arr[left++] <= leader) { }
     while (arr[right--] > leader) { }
@@ -112,3 +108,46 @@ function quickSort2(arr,start,end) {
 }
 // console.log(quickSort2(arr,0,arr.length - 1))
 
+/**
+ *    栈
+ */
+
+class Stack {
+  arr = []
+  length = 0
+  enqueue(v) {
+    this.arr.push(v);
+    return ++this.length
+  }
+  dequeue() {
+    if (this.length === 0) throw Error('队列为空')
+    this.length--
+    return this.arr.pop()
+
+  }
+}
+
+// let a = new Stack()
+// console.log('a',a)
+
+/**
+ * Queue
+ */
+
+class Queue {
+  arr = []
+  length = 0
+  enqueue(v) { this.arr.push(v) }
+  dequeue() { this.arr.shift() }
+}
+
+/**
+ * 双向链表
+ * 优点：能从任意节点 遍历整条链表
+ * 缺点：耗费存储空间
+ */
+function Node(value) {
+  this.value = value
+  this.next = null
+  this.prev = null
+}
