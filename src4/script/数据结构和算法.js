@@ -150,4 +150,104 @@ function Node(value) {
   this.value = value
   this.next = null
   this.prev = null
+  this.left = null
+  this.right = null
 }
+
+/**
+ * 图形数据
+ */
+
+class People {
+  static amount = 0
+  constructor(name) {
+    People.amount++
+    this.name = name
+    this.id = Math.round(Math.random() * 1e10)
+    this.relation = {}
+    this.friends = {}
+  }
+  sayHi(somebody) {
+    this.increaseFavorability(somebody)
+    somebody.increaseFavorability(this)
+  }
+  increaseFavorability(somebody,n = 1) {
+    if (this.relation.hasOwnProperty(somebody.id)) {
+      this.relation[somebody.id].favorability += n
+    } else {
+      this.relation[somebody.id] = { favorability: n }
+    }
+    console.log(`${this.name} 和 ${somebody.name} 好感度+1 `)
+  }
+
+
+  makeFriend(somebody) {
+    let res = somebody.acceptInvitation(this)
+    if (res) {
+      console.log(`${this.name} 和 ${somebody.name}成为朋友!`)
+      this.friends[somebody.id] = somebody
+    } else {
+      console.log(`你和 ${somebody.name}的好感度不足，暂无法成为朋友，多多和他互动吧`)
+    }
+  }
+  acceptInvitation(somebody) {
+    const favorability = this.relation[somebody.id]?.favorability
+    if (favorability === undefined || favorability < 5) {
+      return false
+    } else {
+      console.log(`${this.name} 和 ${somebody.name}成为朋友!`)
+      this.friends[somebody.id] = somebody
+      return true
+    }
+
+  }
+}
+
+// let zs = new People('张三')
+// let ls = new People('李四')
+// let wmz = new People('王麻子')
+/**
+ * 二叉树的遍历
+ * 1.前序遍历 前边 左边 右边
+ * 2.中序遍历 左边 前边 右边
+ * 3.后序遍历 左边 右边 前边 
+ */
+let [a,b,c,d,e,f,g] = Array.from({ length: 7 },(_,i) => new Node(String.fromCharCode(97 + i)))
+a.left = b
+b.left = d
+b.right = e
+a.right = c
+c.left = f
+c.right = g
+//fl:前序
+function fl(root) {
+  if (root === null) return
+  console.log('root',root.value)
+  fl(root.left)
+  fl(root.right)
+}
+// ml:中序
+function ml(root) {
+  if (root === null) return
+  ml(root.left)
+  console.log('root',root.value)
+  ml(root.right)
+
+}
+//ll(later):后序
+function ll(root) {
+  if (root === null) return
+  ml(root.left)
+  ml(root.right)
+  console.log('root',root.value)
+
+}
+console.group('前序')
+fl(a)
+console.groupEnd('前序')
+console.group('中序')
+ml(a)
+console.groupEnd('中序')
+console.group('后序')
+ll(a)
+console.groupEnd('后序')
