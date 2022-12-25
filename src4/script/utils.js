@@ -24,9 +24,15 @@ const setNodeArr = (length = 7) => Array.from({ length },(_,i) => new Node(Strin
 function randomIntArray(length = 5,range = 100) {
   return Array.from({ length },() => Math.round(Math.random() * range))
 }
+const Colors = {
+  WHITE: 0, //表示该顶点还没有被访问。
+  GREY: 1,  //表示该顶点被访问过，但并未被探索过
+  BLACK: 2  //表示该顶点被访问过且被完全探索过。
+}
 module.exports = {
   compareFn,
   exchangeFn,
   setNodeArr,
-  randomIntArray
+  randomIntArray,
+  Colors
 }

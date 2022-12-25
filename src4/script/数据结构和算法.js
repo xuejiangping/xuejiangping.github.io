@@ -1,5 +1,5 @@
 
-const { setNodeArr,exchangeFn,compareFn } = require('./utils.js')
+const { setNodeArr,exchangeFn,compareFn,Colors } = require('./utils.js')
 
 // 递归 实现斐波那契
 function fb(n) {
@@ -152,9 +152,7 @@ class Queue {
 
 
 
-/**
- * 图形数据
- */
+
 
 class People {
   static amount = 0
@@ -327,13 +325,110 @@ function compareTree(root1,root2) {
  * 
  */
 //  需要输出的diff列表模板
-let diffList = [
-  {
-    type: '增加了' || '删除了' || '修改了',
-    origin: null,
-    now: null
+// let diffList = [
+//   {
+//     type: '增加了' || '删除了' || '修改了',
+//     origin: null,
+//     now: null
+//   }
+// ]
+let diffList = []
+function diffTree(root1,root2,diffList) {
+  if (root1 == root2) return diffList
+  if (root1 == null && root2 !== null) {
+    diffList.push({
+      type: '增加了',
+      origin: null,
+      now: root2.value
+    })
+  } else if (root1 !== null && root2 === null) {
+    diffList.push({
+      type: '删除了',
+      origin: root1.value,
+      now: null
+    })
+  } else if (root1.value !== root2.value) {
+    diffList.push({
+      type: '修改了',
+      origin: root1.value,
+      now: root2.value
+    })
+    diffTree(root1.left,root2.left,diffList)
+    diffTree(root1.right,root2.right,diffList)
+  } else {
+    diffTree(root1.left,root2.left,diffList)
+    diffTree(root1.right,root2.right,diffList)
   }
-]
-function diffTree(root1,root2) {
 
 }
+// a.value = 'q'
+// d2.value = 'd2'
+// b2.value = 'b2'
+// diffTree(a,a2,diffList)
+// console.log('diffList',diffList)
+
+
+
+/**
+ * 图形 数据结构
+ * 图的最小生成树的问题
+ */
+
+class Graph {
+  constructor(isDirected = false) {
+    this.isDirected = isDirected; // {1}
+    this.vertices = []; // {2}
+    this.adjList = new Map(); // {3}
+  }
+  addVertex(v) {
+    if (!this.vertices.includes(v)) { // {5}
+      this.vertices.push(v); // {6}
+      this.adjList.set(v,[]); // {7}
+    }
+  }
+  addEdge(v,w) {
+    if (!this.adjList.get(v)) {
+      this.addVertex(v); // {8}
+    }
+    if (!this.adjList.get(w)) {
+      this.addVertex(w); // {9}
+    }
+    this.adjList.get(v).push(w); // {10}
+    if (!this.isDirected) {
+      this.adjList.get(w).push(v); // {11}
+    }
+  }
+  getVertices() {
+    return this.vertices;
+  }
+  getAdjList() {
+    return this.adjList;
+  }
+  toString() {
+    let str = ''
+    this.adjList.forEach((v,k) => {
+      str += `${k}  -->  ${v.toString()}\n`
+    })
+    return str
+  }
+
+}
+/**
+ * 
+ * @param {Array} vertices 图顶点集合
+ * @returns {object}
+ */
+const initializeColor = vertices => vertices.reduce((t,v) => (t[v] = Colors.WHITE,t),{})
+const graph = new Graph()
+const myVertices = ['A','B','C','D','E']
+myVertices.forEach(v => graph.addVertex(v))
+
+graph.addEdge('A','C')
+graph.addEdge('A','B')
+graph.addEdge('B','D')
+graph.addEdge('B','E')
+graph.addEdge('E','D')
+
+console.log(graph.toString())
+console.log('initializeColor(graph.vertices)',initializeColor(graph.vertices))
+
