@@ -1,15 +1,5 @@
-/**
- * 比较 和 交换 工具函数
- */
-const compareFn = (a,b) => a > b
-const exchangeFn = (arr,i,j) => ([arr[j],arr[i]] = [arr[i],arr[j]],arr)
 
-/**
- * 生成测试随机数组
- */
-function randomIntArray(length = 5,range = 100) {
-  return Array.from({ length },() => Math.round(Math.random() * range))
-}
+const { setNodeArr,exchangeFn,compareFn } = require('./utils.js')
 
 // 递归 实现斐波那契
 function fb(n) {
@@ -160,20 +150,7 @@ class Queue {
   dequeue() { this.arr.shift() }
 }
 
-/**
- * 双向链表
- * 优点：能从任意节点 遍历整条链表
- * 缺点：耗费存储空间
- */
-class Node {
-  constructor(value) {
-    this.value = value
-    this.next = null
-    this.prev = null
-    this.left = null
-    this.right = null
-  }
-}
+
 
 /**
  * 图形数据
@@ -233,13 +210,24 @@ class People {
  * 2.中序遍历 左边 前边 右边
  * 3.后序遍历 左边 右边 前边 
  */
-let [a,b,c,d,e,f,g] = Array.from({ length: 7 },(_,i) => new Node(String.fromCharCode(97 + i)))
+// 二叉树1 
+
+let [a,b,c,d,e,f,g] = setNodeArr()
 a.left = b
 a.right = c
 b.left = d
 b.right = e
 c.left = f
 c.right = g
+// 二叉树2
+let [a2,b2,c2,d2,e2,f2,g2] = setNodeArr()
+a2.left = b2
+a2.right = c2
+b2.left = d2
+b2.right = e2
+c2.left = f2
+c2.right = g2
+
 //fl:前序遍历
 function fl(root) {
   if (root === null) return
@@ -309,4 +297,43 @@ function wideSearch(rootList,target) {
 
 }
 // console.log("deepSearch(a,'d')",deepSearch(a,'j'))
-console.log("wideSearch([a],'b')",wideSearch([a],'f'))
+// console.log("wideSearch([a],'b')",wideSearch([a],'f'))
+// c2.left = null
+
+/**
+ * 二叉树的比较
+ * 该比较不分左右，即 
+ * root1.left <==> root2.left
+ * root1.left <==> root2.right
+ * @param {*} root1 第一个二叉树的根节点
+ * @param {*} root2 第二个二叉树的根节点
+ * @returns 
+ */
+function compareTree(root1,root2) {
+  if (root1 == null && root2 == null) return true
+  if (root1 == null || root2 == null) return false
+  return root1.value === root2.value &&
+    (compareTree(root1.left,root2.left) &&
+      compareTree(root1.right,root2.right)) ||
+    (compareTree(root1.left,root2.right) &&
+      compareTree(root1.right,root2.left))
+}
+
+// console.log('compareTree(a,a2)',compareTree(a,a2))
+
+/**
+ * 输出 树1 和 树2 不一样的地方
+ * 增加了什么、删除了什么、修改了什么
+ * 
+ */
+//  需要输出的diff列表模板
+let diffList = [
+  {
+    type: '增加了' || '删除了' || '修改了',
+    origin: null,
+    now: null
+  }
+]
+function diffTree(root1,root2) {
+
+}
