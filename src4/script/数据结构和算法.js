@@ -1,5 +1,7 @@
 
-const { setNodeArr,exchangeFn,compareFn,Colors } = require('./utils.js')
+const { setNodeArr,exchangeFn,compareFn,Colors,
+  initializeColor
+} = require('./utils.js')
 
 // 递归 实现斐波那契
 function fb(n) {
@@ -413,22 +415,107 @@ class Graph {
   }
 
 }
-/**
- * 
- * @param {Array} vertices 图顶点集合
- * @returns {object}
- */
-const initializeColor = vertices => vertices.reduce((t,v) => (t[v] = Colors.WHITE,t),{})
-const graph = new Graph()
-const myVertices = ['A','B','C','D','E']
-myVertices.forEach(v => graph.addVertex(v))
 
+// 构建 用于测试的 图 数据结构
+const graph = new Graph()
+const myVertices = ['A','B','C','D','E','F','G']
+myVertices.forEach(v => graph.addVertex(v))
 graph.addEdge('A','C')
 graph.addEdge('A','B')
 graph.addEdge('B','D')
 graph.addEdge('B','E')
+graph.addEdge('B','F')
+graph.addEdge('C','F')
+graph.addEdge('D','F')
 graph.addEdge('E','D')
+graph.addEdge('E','G')
 
-console.log(graph.toString())
-console.log('initializeColor(graph.vertices)',initializeColor(graph.vertices))
+
+
+// console.log(graph.toString())
+// console.log('initializeColor(graph.vertices)',initializeColor(graph.vertices))
+
+/**
+ * 图的广度优先 搜索
+ * 循环起始节点的同一层子树节点
+ * @param {Graph} graph 
+ * @param {*} startVertex 搜索的起始顶点
+ * @param {*} cb 回调函数
+ */
+function breadthFirstSearchGraph(graph,startVertex,cb) {
+  const adjList = graph.getAdjList()
+  const vertices = graph.getVertices()
+  const color = initializeColor(vertices)
+  const queqe = [startVertex]
+  const distances = {}  //起始点到各其它顶点距离（边数）
+  const predecessors = {}  //回溯点
+  vertices.forEach(v => { distances[v] = 0,predecessors[v] = null })
+  while (queqe.length > 0) {
+    const u = queqe.shift()
+    color[u] = Colors.GREY
+    const neighbors = adjList.get(u)
+    neighbors.forEach(v => {
+      if (color[v] === Colors.WHITE) {
+        queqe.push(v)
+        distances[v] = distances[u] + 1
+        predecessors[v] = u
+        color[v] = Colors.GREY
+      }
+    })
+    color[u] = Colors.BLACK
+    if (cb) cb(u)
+  }
+  return { distances,predecessors }
+
+}
+const testCB = v => console.log('节点：',v)
+// let res = breadthFirstSearchGraph(graph,'B',testCB)
+// console.log('res',res)
+
+/**
+ * 图的深度优先 搜索
+ * 通过递归 搜索子树
+ * @param {Graph} graph
+ */
+function depthFirstSearchGraph(graph,startVertex,cb) {
+  const adjList = graph.getAdjList()
+  const vertices = graph.getVertices()
+  const color = initializeColor(vertices)
+  const depthFirstSearchVisit = (u,cb) => {
+    if (cb) cb(u)
+    color[u] = Colors.GREY
+    const neighbors = adjList.get(u)
+    neighbors.forEach(v => {
+      if (color[v] === Colors.WHITE) {
+        depthFirstSearchVisit(v,cb)
+      }
+    })
+    color[u] = Colors.BLACK
+  }
+  depthFirstSearchVisit(startVertex,cb)
+}
+
+// depthFirstSearchGraph(graph,'C',testCB)
+
+/**
+ * 测试图 2 
+ */
+const graph2 = new Graph(true)
+const myVertices2 = ['A','B','C','D','E','F']
+myVertices2.forEach(v => graph2.addVertex(v))
+
+graph2.addEdge('A','C')
+graph2.addEdge('A','D')
+graph2.addEdge('B','D')
+graph2.addEdge('B','E')
+graph2.addEdge('C','F')
+graph2.addEdge('F','E')
+
+console.log('graph2',graph2)
+
+
+
+
+
+
 

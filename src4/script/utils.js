@@ -29,7 +29,15 @@ const Colors = {
   GREY: 1,  //表示该顶点被访问过，但并未被探索过
   BLACK: 2  //表示该顶点被访问过且被完全探索过。
 }
+/**
+ * 初始化图颜色
+ * @param {Array} vertices 图顶点集合
+ * @returns {object}
+ */
+const initializeColor = vertices => vertices.reduce((t,v) => (t[v] = Colors.WHITE,t),{})
+
 module.exports = {
+  initializeColor,
   compareFn,
   exchangeFn,
   setNodeArr,
