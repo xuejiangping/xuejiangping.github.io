@@ -44,4 +44,4 @@ btn.onclick = speech
 // }
 setTimeout(() => {
   addVoiceList()
-},10);
+},100);

@@ -10,10 +10,29 @@ const exchangeFn = (arr,i,j) => ([arr[j],arr[i]] = [arr[i],arr[j]],arr)
 function randomIntArray(length = 5,range = 100) {
   return Array.from({ length },() => Math.round(Math.random() * range))
 }
+
+// 递归 实现斐波那契
+function fb(n) {
+  if (n < 1) return 0
+  if (n < 3) return 1
+  return fb(n - 1) + fb(n - 2)
+}
+
+// 循环 实现斐波那契数列
+function fb2(n) {
+  if (n < 1) return 0
+  if (n < 3) return 1
+  let f1 = 1,f2 = 1,fn
+  for (let i = 2; i < n; i++) {
+    fn = f1 + f2
+    f1 = f2
+    f2 = fn
+  }
+  return fn
+}
 /**
  * 洗牌算法，打乱数组顺序
- * @param {*} arr 
- * @returns 
+ * @param {Array} arr 
  */
 function shuffle(arr) {
   const setRandomIndex = () => Math.floor(Math.random() * arr.length)
@@ -146,12 +165,14 @@ class Queue {
  * 优点：能从任意节点 遍历整条链表
  * 缺点：耗费存储空间
  */
-function Node(value) {
-  this.value = value
-  this.next = null
-  this.prev = null
-  this.left = null
-  this.right = null
+class Node {
+  constructor(value) {
+    this.value = value
+    this.next = null
+    this.prev = null
+    this.left = null
+    this.right = null
+  }
 }
 
 /**
@@ -214,19 +235,19 @@ class People {
  */
 let [a,b,c,d,e,f,g] = Array.from({ length: 7 },(_,i) => new Node(String.fromCharCode(97 + i)))
 a.left = b
+a.right = c
 b.left = d
 b.right = e
-a.right = c
 c.left = f
 c.right = g
-//fl:前序
+//fl:前序遍历
 function fl(root) {
   if (root === null) return
   console.log('root',root.value)
   fl(root.left)
   fl(root.right)
 }
-// ml:中序
+// ml:中序遍历
 function ml(root) {
   if (root === null) return
   ml(root.left)
@@ -234,20 +255,58 @@ function ml(root) {
   ml(root.right)
 
 }
-//ll(later):后序
+//ll(later):后序遍历
 function ll(root) {
   if (root === null) return
-  ml(root.left)
-  ml(root.right)
+  ll(root.left)
+  ll(root.right)
   console.log('root',root.value)
 
 }
-console.group('前序')
-fl(a)
-console.groupEnd('前序')
-console.group('中序')
-ml(a)
-console.groupEnd('中序')
-console.group('后序')
-ll(a)
-console.groupEnd('后序')
+// console.group('前序')
+// fl(a)
+// console.groupEnd('前序')
+// console.group('中序')
+// ml(a)
+// console.groupEnd('中序')
+// console.group('后序')
+// ll(a)
+// console.groupEnd('后序')
+
+
+
+let forward = ['A','B','D','E','C','F','G']
+let middle = ['D','B','E','A','F','C','G']
+
+function f1() {
+
+}
+/**
+ * 深度优先搜索 二叉树
+ * 缺点 容易爆栈
+ * @param {Node} root 
+ * @param {*} target 
+ */
+function deepSearch(root,target) {
+  if (root === null) return false
+  if (root.value === target) return root
+  return deepSearch(root.left,target) || deepSearch(root.right,target)
+}
+/**
+ * 广度优先 搜索
+ * 传入一个节点数组，遍历数组若找到则返回目标节点
+ * 若未找到，则根据节点数数组，生成新的字节点数组，递归循环
+ * @param {Node[]} rootList
+ * @param {*} target 目标 
+ */
+function wideSearch(rootList,target) {
+  if (rootList.length === 0) return false
+  return rootList.find(root => root.value === target) ||
+    wideSearch(rootList.reduce((t,root) => (
+      root.left !== null && t.push(root.left),
+      root.right !== null && t.push(root.right)
+      ,t),[]),target)
+
+}
+// console.log("deepSearch(a,'d')",deepSearch(a,'j'))
+console.log("wideSearch([a],'b')",wideSearch([a],'f'))

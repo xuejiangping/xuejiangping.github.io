@@ -6,12 +6,48 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./style/index.css">
-    <script src="./script/index.js"></script>
+    <!-- <script src="./script/index.js"></script> -->
     <title>Document</title>
+    <style>
+      #box {
+        width: 300px;
+        margin: 0 auto;
+        /* transform: rotateY(90deg); */
+        perspective: 100px;
+
+      }
+
+      .square {
+        width: 200px;
+        height: 200px;
+        border: 1px solid;
+      }
+
+      .s1 {
+        transform: translate3d(200px, 200px, 0px) rotateY(90deg);
+      }
+
+      .s3 {
+        transform: translate3d(-200px, -200px, 0px) rotateY(90deg)
+      }
+
+      .s4 {
+        transform: translate3d(0px, -400px, 0px);
+
+      }
+
+    </style>
   </head>
 
   <body>
-    <h1>demo</h1>
+    <div id="box">
+      <div class="square s1">1</div>
+      <div class="square s2">2</div>
+      <div class="square s3">3</div>
+      <div class="square s4">4</div>
+      <div class="square s5">5</div>
+      <div class="square s6">6</div>
+    </div>
   </body>
 
 
