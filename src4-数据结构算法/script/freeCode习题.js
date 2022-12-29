@@ -1,4 +1,7 @@
 const { Worker,isMainThread } = require('node:worker_threads');
+const { ReadableStream,WritableStream } = require('stream/web');
+const { WriteStream,createWriteStream } = require('node:fs');
+const path = require('node:path');
 //#region 基础数据
 const romanUnit = [["M","1000"],["CM","900"],["D","500"],["CD","400"],["C","100"],["XC","90"],["L","50"],["XL","40"],["X","10"],["IX","9"],["V","5"],["IV","4"],["I","1"]]
 const currencyUnit = new Map([["PENNY",0.01],["NICKEL",0.05],["DIME",0.1],["QUARTER",0.25],["ONE",1],["FIVE",5],["TEN",10],["TWENTY",20],["ONE HUNDRED",100]])
@@ -224,4 +227,23 @@ port1.onmessage = ({ data }) => console.log('port1接受:',data)
 //#endregion
 
 
+async function test(url) {
+  let res = await fetch(url)
+  let reader = res.body.getReader()
+  let filePath = path.join(__dirname,path.basename(url))
+  let ws = createWriteStream(filePath)
+  let { done,value } = await reader.read()
+  while (!done) {
+    // console.log(value)
+    ws.write(value,err => err && console.log('写入错误：',err))
+    let { done: done1,value: value1 } = await reader.read()
+    done = done1
+    value = value1
+  }
+
+  ws.end(() => console.log('写入完成'))
+
+}
+let url = 'https://www.runoob.com/try/demo_source/mov_bbb.mp4'
+test(url)
 
