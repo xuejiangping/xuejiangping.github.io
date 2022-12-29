@@ -379,7 +379,7 @@ function diffTree(root1,root2,diffList) {
 class Graph {
   constructor(isDirected = false) {
     this.isDirected = isDirected; // {1}
-    this.vertices = []; // {2}
+    this.vertices = []; // {2} Vex
     this.adjList = new Map(); // {3}
   }
   addVertex(v) {
