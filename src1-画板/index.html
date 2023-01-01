@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- 给链接添加额外的查询参数不会影响链接的有效性 -->
+    <link rel="stylesheet" href="./style/index.css">
+    <script type="module" src="./script/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script async>
+      const http = axios.create({
+        timeout: 3000,
+        params: new URLSearchParams({ age: 123,name: 'zs' }),
+        data: '庄生晓梦迷蝴蝶',
+
+      })
+      // http.get('./style/index.less').then(({ data }) => console.log(data))
+      axios.get('../街霸.jpg',{ responseType: 'blob' }).then(({ data }) => {
+        let img = new Image(300,120)
+        img.src = URL.createObjectURL(data)
+        document.body.appendChild(img)
+
+      }
+      )
+
+
+    </script>
+
+  </head>
+
+  <body>
+    <div class="controler">
+      <button id="clearBtn">清除画布</button>
+      <label>画笔粗细： <input type="range" id="stroke" min="1" max="30"></label>
+      <label>画笔颜色： <input type="color" id="color"></label>
+      <button id="undo">撤销</button>
+      <button id="redo">恢复</button>
+    </div>
+    <canvas id="cvs1"></canvas>
+
+
+  </body>
+
+</html>
