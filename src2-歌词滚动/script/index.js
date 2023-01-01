@@ -1,10 +1,17 @@
 import lrc from '../assets/六月的雨.js'
-window.lrc = lrc
+import start from './音频可视化.js'
+// console.log('cc',cc)
+// window.lrc = lrc
 const lrcList = document.querySelector('.lrclist')
 const player = document.getElementById('player')
 const container = document.getElementById('container')
+const cvs = document.getElementById('cvs')
 const lrcData = parseLrc(lrc)
 
+cvs.style.top = innerHeight / 5 + 'px'
+cvs.width = innerWidth
+cvs.height = innerHeight - innerHeight / 5
+const { resume,supend } = start(player,cvs,{ fillStyle: 'hotpink',fftSize: 512 })
 
 createLrcElements()
 /**
@@ -82,6 +89,7 @@ function createLrcElements() {
  * @param {Number} gap 时间间隔
  * @param {Number} HZ 回调执行频次
  */
+// 缓动函数，用于将音频淡入淡出
 function easingFn(fn,gap = 200,HZ = 5) {
   let i = 0,timer
   timer = setInterval(() => {
@@ -92,12 +100,20 @@ function easingFn(fn,gap = 200,HZ = 5) {
 player.ontimeupdate = setOffsetY
 
 player.onplay = function () {
+  resume()
   this.volume = 0
   easingFn(() => {
     this.volume += 0.05
   },200,10)
 
 }
+
+player.onpause = function () {
+  supend()
+}
+
+
+
 
 // const ws = new WritableStream({
 //   write(chunk) {

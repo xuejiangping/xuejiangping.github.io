@@ -71,5 +71,5 @@ function a() {
       start(audioEl,cvs,mediaStream)
     }).catch(err => console.log(err))
 }
-a()
+// a()
 // start(audioEl,cvs)
