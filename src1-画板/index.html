@@ -18,7 +18,7 @@
 
       })
       // http.get('./style/index.less').then(({ data }) => console.log(data))
-      axios.get('./街霸.jpg',{ responseType: 'blob' }).then(({ data }) => {
+      axios.get('./assets/街霸.jpg',{ responseType: 'blob' }).then(({ data }) => {
         let img = new Image(300,120)
         img.src = URL.createObjectURL(data)
         document.body.appendChild(img)
