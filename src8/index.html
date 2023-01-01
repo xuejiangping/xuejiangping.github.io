@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style/index.css">
+    <script defer src="./script/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <title>Document</title>
+  </head>
+
+  <body>
+    <h1>demo</h1>
+    <form>
+      <input type="file" name="file" id="">
+      <input type="text" name="name" id="">
+      <input type="checkbox" name="isA" id="">
+      <button type="button" id="upload">上传</button>
+    </form>
+  </body>
+  <script>
+    let btn = document.getElementById('upload')
+    let form = document.querySelector('form')
+    let url = 'http://192.168.199.208:9000/upload'
+    console.log('axios',axios)
+
+    btn.onclick = function () {
+
+      let fd = new FormData(form)
+      let file = fd.get('file')
+
+      axios({
+        url,method: 'post',
+        data: fd
+      })
+    //   console.log(file)
+    //   fetch('http://192.168.199.208:9000/upload',{
+    //     method: 'post',
+    //     body: file,
+
+    //   }).then(console.log)
+    // }
+  </script>
+
+</html>
