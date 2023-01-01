@@ -95,8 +95,9 @@ drawCircle(6);
 let img = (function (img) {
     img.src = cvs.toDataURL();
     document.body.appendChild(img);
-    img.animate({
+    let animation=img.animate({
         transform: ['rotate(0deg)', 'rotate(360deg)']
-    }, { duration: 2000, iterations: Infinity }).cancel();
+    }, { duration: 2000, iterations: Infinity });
+    // animation.cancel()
     return img;
 })(new Image);
