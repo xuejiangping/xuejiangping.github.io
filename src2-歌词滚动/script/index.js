@@ -1,18 +1,22 @@
 import lrc from '../assets/六月的雨.js'
 import start from './音频可视化.js'
-// console.log('cc',cc)
-// window.lrc = lrc
+
 const lrcList = document.querySelector('.lrclist')
+/**
+ * @constant {HTMLAudioElement} 
+ */
 const player = document.getElementById('player')
 const container = document.getElementById('container')
 const cvs = document.getElementById('cvs')
+const ctx = cvs.getContext('2d')
 const lrcData = parseLrc(lrc)
-
-cvs.style.top = innerHeight / 5 + 'px'
+const playBtn = document.getElementById('playBtn')
+player.controls = false
+cvs.style.top = innerHeight / 3 + 'px'
 cvs.width = innerWidth
-cvs.height = innerHeight - innerHeight / 5
-const { resume,supend } = start(player,cvs,{ fillStyle: 'hotpink',fftSize: 512 })
-
+cvs.height = innerHeight - innerHeight / 3
+const { resume,supend,gainNode,drawMethods } = start(player,ctx,{ fillStyle: 'hotpink',fftSize: 256 })
+ctx.strokeStyle = '#fff'
 createLrcElements()
 /**
  * 根据播放时间设置 滚动位置
@@ -41,6 +45,7 @@ const setOffsetY = (function () {
 })()
 
 
+window.gainNode = gainNode
 /**
  * 格式化lrc歌词的时间，单位：秒
  * @param {String} t 原歌词时间,格式 '00:00.00'
@@ -91,27 +96,80 @@ function createLrcElements() {
  */
 // 缓动函数，用于将音频淡入淡出
 function easingFn(fn,gap = 200,HZ = 5) {
-  let i = 0,timer
-  timer = setInterval(() => {
-    if (++i === HZ) clearInterval(timer)
-    fn()
-  },gap)
+  return new Promise(res => {
+    let i = 0,timer
+    timer = setInterval(() => {
+      if (++i === HZ) {
+        clearInterval(timer)
+        res()
+      }
+      fn()
+    },gap)
+  })
 }
+
 player.ontimeupdate = setOffsetY
 
-player.onplay = function () {
-  resume()
-  this.volume = 0
+//声音淡入
+player.fadein = function (duration = 1000,volume = 0.5,hz = 10) {
+  gainNode.gain.value = 0
+  this.play()
   easingFn(() => {
-    this.volume += 0.05
-  },200,10)
-
+    // this.volume += (volume / hz)
+    gainNode.gain.value += (volume / hz)
+  },duration / hz,hz)
+}
+//声音淡出
+player.fadeout = function (duration = 2000,hz = 10) {
+  let startVolume = +gainNode.gain.value.toPrecision(2)
+  let i = hz
+  easingFn(() => {
+    let a = startVolume * (--i / 10)
+    console.log('a',a,startVolume)
+    gainNode.gain.value = a
+    // this.volume = v < 0 ? 0 : v
+    // gainNode.gain.value = v
+  },duration / hz,hz).then(() => {
+    this.pause()
+  })
 }
 
-player.onpause = function () {
-  supend()
+playBtn.onclick = function () {
+  if (player.paused) {
+    player.fadein()
+    player.play()
+    resume()
+  } else {
+    player.pause()
+    // player.fadeout()
+    supend()
+  }
 }
 
+document.onmousemove = function ({ pageY: y }) {
+  let v = y / innerHeight
+  gainNode.gain.value = v
+}
+function createSelectList() {
+  const fragment = document.createDocumentFragment()
+  for (const key in drawMethods) {
+    console.log('key',key)
+    if (Object.hasOwnProperty.call(drawMethods,key)) {
+      let option = document.createElement('option')
+      option.textContent = key
+
+      fragment.appendChild(option)
+    }
+  }
+  fragment.firstElementChild.defaultSelected = true
+  let select = document.querySelector('select')
+  select.appendChild(fragment)
+  select.onchange = function () {
+    console.log('this.value',this.value)
+    drawMethods.default = drawMethods[this.value]
+  }
+}
+createSelectList()
 
 
 

@@ -25,9 +25,6 @@ function test1(arr,target) {
 }
 
 
-
-
-
 /**
  * 找出参数数组 中不同之处
  * @param  {...number[]} args 
@@ -279,9 +276,55 @@ function solve24(numStr,num = 24) {
   return resArr.map(v => ({ [v]: eval(v) }))
   // return resArr.filter(v => eval(v) === num)
 
-
 }
 // let res = solve24('3459',55)
 // console.log('res',res)
+function sleep(delay,fn) {
+  if (typeof delay === 'number') {
+    new Promise(res => setTimeout(res,delay,delay)).then(v => {
+      fn()
+      sleep(delay,fn)
+    })
+  }
+}
+
+
+async function sleep2(delay,fn) {
+  if (typeof delay === 'number') {
+    await new Promise(res => setTimeout(res,delay,delay))
+    fn()
+    sleep2(delay,fn)
+  }
+}
+/**
+ *  数组异步reduce方法
+ * @returns 
+ */
+Array.prototype.reduceAsync = function (cb,t) {
+  return new Promise(async (res) => {
+    // (async function _(i,arr) {
+    //   if (i === arr.length) return res(t)
+    //   t = cb(t,await arr[i](),i)
+    //   _(i + 1,arr)
+    //   console.log(new Date().getSeconds())
+    // })(0,this)
+    for (let i = 0; i < this.length; i++) {
+      let v = await (this[i] instanceof Function ? this[i]() : this[i])
+      t = cb(t,v,i)
+    }
+    res(t)
+  })
+}
+// let arr = Array(5).fill().map((_,i) => () => new Promise(res => setTimeout(res,1000,i)))
+// console.time('a')
+//   let res = arr.reduceAsync((t,v) => t.concat(v),[]).then(res => {
+//     console.log('reduceAsync',res)
+//     console.timeEnd('a')
+//   })
+
+// Promise.allSettled(arr).then(v => console.log('all',v))
+// sleep(1000,() => console.log(123))
+// sleep2(1000,() => console.log(new Date().getSeconds()))
 
 // debugger
+
