@@ -125,7 +125,6 @@ player.fadeout = function (duration = 2000,hz = 10) {
   let i = hz
   easingFn(() => {
     let a = startVolume * (--i / 10)
-    console.log('a',a,startVolume)
     gainNode.gain.value = a
     // this.volume = v < 0 ? 0 : v
     // gainNode.gain.value = v
