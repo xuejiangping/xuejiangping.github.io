@@ -1,4 +1,9 @@
-
+/**
+ * 生成随机数组
+ * @param {number} length 
+ * @param {number} range 
+ * @returns 
+ */
 const getRandomArr = (length = 20,range = 10) => Array(length).fill().map(() => Math.round(Math.random() * range))
 
 /**
