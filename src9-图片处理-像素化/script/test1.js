@@ -112,7 +112,7 @@ class Demo2 {
 }
 // demo = new Demo2(v).init(300,200,200,100 + v.clientHeight)
 
-async function a(myPath) {
+async function generateIndexPage(myPath) {
   const dirArr = await readdir(myPath)
   const reg = /^src\d/
   const reg2 = /(?<=<body>)(.|\n|\r)*?(?=<\/body>)/
@@ -122,7 +122,7 @@ async function a(myPath) {
   await writeFile(myPath + 'index.html',newData)
   // console.log('写入完成')
 }
-a('./')
+generateIndexPage('./')
 
 
 
