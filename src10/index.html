@@ -6,12 +6,64 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./style/index.css">
-    <script defer src="./script/index.js"></script>
+    <!-- <script defer src="./script/index.js"></script> -->
     <title>浮生浪迹笑明月</title>
   </head>
 
   <body>
     <h1>demo</h1>
+    <canvas id="cvs" width="500" height="500" style="border:1px solid blue;"></canvas>
+    <!-- <script>
+      const cvs = document.getElementById('cvs')
+      const ctx = cvs.getContext('2d')
+      function setPosArr(n,t) {
+        return Array(n).fill().reduce((t,v,i) => {
+          Array(n).fill().forEach((_,j) => t.push([i,j]))
+          return t
+        },[]).map(([x,y]) => [x * t,y * t])
+      }
+      function latticePaths(n) {
+        let arr = []
+        const fn = (x,y,path) => {
+          path = path.concat([[x,y]])
+          if (x === n && y === n) return arr.push(path)
+          if (x < n) fn(x + 1,y,path)
+          if (y < n) fn(x,y + 1,path)
+        }
+        fn(0,0,[])
+        return arr
+      }
+      function drawPath(pathArr) {
+        ctx.clearRect(0,0,500,500)
+        posArr.forEach(([x,y]) => ctx.fillRect(x,y,5,5))
+        pathArr.forEach(v => {
+          ctx.lineTo(...v)
+        })
+        ctx.stroke()
+        ctx.beginPath()
+
+      }
+      let posArr = setPosArr(5,100)
+      posArr.forEach(([x,y]) => ctx.fillRect(x,y,5,5))
+
+      let vArr = latticePaths(4).map(v => v.map(([x,y]) => [x * 100,y * 100]))
+      vArr.forEach((v,i) => {
+        setTimeout(() => {
+          drawPath(v)
+        },1000 * i);
+      })
+
+
+
+
+
+
+
+
+
+
+    </script> -->
   </body>
+
 
 </html>

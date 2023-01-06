@@ -1,6 +1,7 @@
 const { Worker,isMainThread } = require('node:worker_threads');
 const { ReadableStream,WritableStream } = require('stream/web');
 const { WriteStream,createWriteStream } = require('node:fs');
+const { thousandDigits } = require('./data.js')
 const path = require('node:path');
 //#region 基础数据
 const romanUnit = [["M","1000"],["CM","900"],["D","500"],["CD","400"],["C","100"],["XC","90"],["L","50"],["XL","40"],["X","10"],["IX","9"],["V","5"],["IV","4"],["I","1"]]
@@ -244,6 +245,190 @@ async function test(url) {
   ws.end(() => console.log('写入完成'))
 
 }
-let url = 'https://www.runoob.com/try/demo_source/mov_bbb.mp4'
-test(url)
+
+/**
+ * 3 5 的倍数和
+ * @param {number} number 
+ * @returns 
+ */
+function multiplesOf3and5(number) {
+  if (number < 3) return 0
+  let res = 0,arr = []
+  const is3and5Times = n => n > 2 && (!(n % 3) || !(n % 5))
+  for (let i = 3; i < number; i++) {
+    is3and5Times(i) && (res += i,arr.push(i))
+  }
+  return { res,arr };
+}
+
+// let res = multiplesOf3and5(1000);
+// console.log('res',res)
+/**
+ * 前n项 fb 数列的偶数和
+ * @param {number} n 
+ */
+function fiboEvenSum(n) {
+  if (n < 3) return 2
+  let a = 1,b = 2,c,res = 2
+  while (a + b <= n) {
+    c = a + b; a = b; b = c;
+    c % 2 === 0 && (res += c)
+  }
+  return res;
+}
+
+// fiboEvenSum(1000)
+
+
+function largestPrimeFactor(number) {
+  // isPrime 判断是否质数
+  const isPrime = num => {
+    if (num < 2 || !Number.isSafeInteger(num)) return false
+    for (let i = 2; i < num; i++) {
+      if (num % i === 0) return false
+    }
+    return true
+  }
+  if (isPrime(number)) return number
+  for (let i = number - 1; i >= 2; i--) {
+    if (number % i === 0 && isPrime(i)) {
+      return i
+    }
+  }
+
+}
+
+// let res = largestPrimeFactor(600851475143);
+// console.log('res',res)
+
+//能被从 1 到 n 的所有数整除的最小正数是多少？
+function smallestMult(n) {
+  const isAllDivide = (number,n) => {
+    for (let i = 2; i <= n; i++) {
+      if (number % i !== 0) return false
+    }
+    return true
+  }
+  let number = n
+  while (true) {
+    if (isAllDivide(number,n)) return number
+    number++
+  }
+}
+
+// console.log('smallestMult(5)',smallestMult(20))
+
+function sumSquareDifference(n) {
+  let a = 0,b = 0
+  for (let i = 1; i <= n; i++) {
+    a += i; b += i ** 2
+  }
+  a *= a
+  console.log(a,b)
+  return b - a;
+}
+
+// sumSquareDifference(10);
+
+// 第n个 质数
+function nthPrime(n) {
+  const isPrime = num => {
+    if (num < 2 || !Number.isSafeInteger(num)) return false
+    for (let i = 2; i < num; i++) {
+      if (num % i === 0) return false
+    }
+    return true
+  }
+  // i 循环的值 ;j 得到的质数的个数 ；k 最后一个质数
+  for (let i = 2,j = 0,k = []; ; i++) {
+    // if (j >= n) return k 
+    if (i >= n) return k
+    isPrime(i) && (j++,k.push(i))
+  }
+
+}
+
+// console.log('nthPrime(100)',nthPrime(10001))
+
+function largestProductinaSeries(n) {
+  let arr = []
+  for (let i = 0; i < thousandDigits.length - n; i++) {
+    let groupArr = Array.from({ length: n },(_,j) => thousandDigits[i + j])
+    arr.push(groupArr)
+  }
+  let resArr = arr.map(v => v.reduce((t,v) => t * v))
+
+  let res = Math.max(...resArr)
+  console.log('res',res)
+  return res;
+}
+
+// largestProductinaSeries(13);
+// a+b+c=n ,a ** 2 + b ** 2 === c ** 2, 求 a,b,c
+function specialPythagoreanTriplet(n) {
+  let sumOfabc = n;
+  let resArr = []
+  for (let a = 1; a < n; a++) {
+    for (let b = a + 1; b < n; b++) {
+      let c = sumOfabc - a - b
+      if (c < b || c < a) break
+      if (a ** 2 + b ** 2 === c ** 2) {
+        resArr.push(a * b * c)
+      }
+    }
+  }
+  console.log('resArr',resArr)
+  return resArr[0]
+}
+
+// specialPythagoreanTriplet(1000);
+function primeSummation(n) {
+  let arr = nthPrime(n)
+  let res = arr.reduce((t,v) => t + v)
+  console.log('res',res)
+  return res;
+}
+
+// primeSummation(2000000);
+// 求网络 路径 左上==>右下
+function latticePaths(n) {
+  let arr = []
+  const fn = (x,y,path) => {
+    if (x === n && y === n) return arr.push(path)
+    if (x < n) fn(x + 1,y,path.concat([x,y]))
+    if (y < n) fn(x,y + 1,path.concat([x,y]))
+  }
+  fn(0,0,[])
+  return arr
+}
+
+// let res = latticePaths(4);
+// console.log('res',res)
+
+
+function longestCollatzSequence(limit) {
+  const isEven = num => num % 2 === 0
+  const _ = (n) => {
+    let arr = [n]
+    while (n !== 1) {
+      n = isEven(n) ? n / 2 : 3 * n + 1
+      arr.push(n)
+    }
+    return arr
+  }
+  let resArr = []
+  for (let i = 1; i < limit; i++) {
+    resArr.push([i,_(i).length])
+  }
+  let res = resArr.reduce((t,v,i) => {
+    if (i === 0) return t = v
+    return v[1] > t[1] ? v : t
+  })
+  return res[0]
+}
+
+longestCollatzSequence(14);
+
+
+debugger
 

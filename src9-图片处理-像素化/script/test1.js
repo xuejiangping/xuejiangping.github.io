@@ -112,19 +112,37 @@ class Demo2 {
 }
 // demo = new Demo2(v).init(300,200,200,100 + v.clientHeight)
 
-async function generateIndexPage(myPath) {
-  const dirArr = await readdir(myPath)
-  const reg = /^src\d/
-  const reg2 = /(?<=<body>)(.|\n|\r)*?(?=<\/body>)/
-  let res = dirArr.reduce((t,v) => reg.test(v) ? `${t}<h1><a href="./${v}">${v}</a></h1>\n` : t,'\n')
-  let data = await readFile(myPath + 'index.html','utf-8')
-  let newData = data.replace(reg2,res)
-  await writeFile(myPath + 'index.html',newData)
-  // console.log('写入完成')
-}
-generateIndexPage('./')
 
 
 
+/**
+ * 实现函数重载，一个函数名可执行不同的函数
+ */
+const addMethod = (function () {
+  const fnMap = new Map()
+  return (o,methodName,fn) => {
+    const subMap = fnMap.get(methodName)
+    if (subMap instanceof Map) {
+      subMap.set(fn.length,fn)
+    } else {
+      fnMap.set(methodName,new Map([[fn.length,fn]]))
+      o[methodName] = function (...args) {
+        fnMap.get(methodName).get(args.length).apply(this,args)
+      }
+    }
+  }
+})()
 
-// debugger
+
+let obj = {}
+addMethod(obj,'find',() => console.log('查找名字'))
+addMethod(obj,'find',(age) => console.log('查找年龄',age))
+addMethod(obj,'find',(age,name) => console.log('查找年龄和名字',age,name))
+
+addMethod(obj,'say',function () { console.log('你好',this) })
+addMethod(obj,'say',(a) => console.log('a',a,this))
+addMethod(obj,'say',(a,b) => console.log('a&b',a,b))
+
+
+
+debugger

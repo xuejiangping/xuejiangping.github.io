@@ -5,7 +5,7 @@
 }
 @media screen and (max-height: 600px) {
   body {
-    color: red;
+    color: rgb(203, 220, 109);
   }
 }
 #cvs {
