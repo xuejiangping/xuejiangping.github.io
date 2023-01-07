@@ -8,7 +8,6 @@ const host = '192.168.199.208'
 // websocket 服务
 const ws = websocket.createServer(function (conn) {
   conn.on('error',err => console.log('发生错误',err.message))
-  conn.on('close',() => console.log('当前连接人数：',ws.connections.length))
   console.log('当前连接人数：',ws.connections.length)
 }).listen(9001,host,() => console.log('websocket 服务启动'))
 function broadcast(msg) {
