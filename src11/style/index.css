@@ -1,0 +1,110 @@
+      .wheel {
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        width: 50%;
+        aspect-ratio: 1;
+        border: 1px solid;
+        border-radius: 50%;
+        animation: myRotate 10s linear infinite;
+      }
+
+      .line {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+      }
+
+      .line:nth-child(2) {
+        transform: rotate(60deg);
+      }
+
+      .line:nth-child(3) {
+        transform: rotate(-60deg);
+      }
+
+      @keyframes myRotate {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        50% {
+          transform: rotate(180deg);
+
+        }
+
+        100% {
+          transform: rotate(360deg);
+
+        }
+      }
+
+      @keyframes myCabin {
+        0% {
+          transform: rotate(0deg);
+          background: purple;
+        }
+
+        20% {
+          background: hotpink;
+
+        }
+
+        50% {
+          transform: rotate(180deg);
+          background: pink;
+
+        }
+
+        80% {
+          background: grey;
+
+        }
+
+        100% {
+          transform: rotate(360deg);
+          background: yellow;
+        }
+      }
+
+      .cabin {
+        position: absolute;
+        width: 80px;
+        aspect-ratio: 1;
+        background-color: red;
+        transform: rotate(45deg);
+        transform-origin: 0 0;
+        animation: myCabin 10s linear infinite reverse;
+        border: 2px solid;
+        transition: all 1s;
+      }
+
+      .cabin:nth-of-type(1) {
+        left: 95px;
+        top: 345px
+      }
+
+      .cabin:nth-of-type(2) {
+        left: 0px;
+        top: 192px
+      }
+
+      .cabin:nth-of-type(3) {
+        left: 369px;
+        top: 190px
+      }
+
+      .cabin:nth-of-type(4) {
+        left: 275px;
+        top: 343px
+      }
+
+      .cabin:nth-of-type(5) {
+        left: 281px;
+        top: 28px
+      }
+
+      .cabin:nth-of-type(6) {
+        left: 84px;
+        top: 28px
+      }
