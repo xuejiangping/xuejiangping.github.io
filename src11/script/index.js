@@ -251,7 +251,7 @@ var intToRoman = function (num) {
   _fn(num)
   return res
 
-};
+}
 // let res = intToRoman(3)
 /**
  * 
@@ -306,6 +306,50 @@ var threeSum = function (nums) {
   debugger
 };
 // threeSum([0,3,0,1,1,-1,-5,-5,3,-3,-3,0])
+
+/**
+ * 画星星
+ * @param {number} rows 行数
+ * @param {string} p 图章样式
+ */
+const printPattern = (rows,p = '🎄') => {
+  let halfRows = Math.floor(rows / 2)
+  let res = ''
+  for (let i = 0,k = 1; i < rows; i++) {
+    // v:每行前面的空格数：(rows - k) / 2, k:改行的图章数
+    /**
+     * @variation 1213  
+     * @variation k
+     */
+    let v = '  '.repeat((rows - k) / 2)
+    for (let j = 0; j < k; j++) v += p
+    res += v + '\n'  // 将每行结果进行拼接并添加换行符 
+    i < halfRows && (k += 2) || (k -= 2)
+  }
+  console.log(res)
+}
+// printPattern(19)
+
+function a() {
+  let cancelBtn = document.querySelector('.Scroll_wrap_ObsGW').querySelectorAll('button');
+  let arr = Array.from(cancelBtn).filter(v => v.querySelector('.woo-button-content').textContent.trim() == '已关注')
+  if (arr.length < 1) return alert('结束')
+  arr.forEach((v,i,array) => {
+    setTimeout(() => {
+      v.click()
+      setTimeout(() => {
+        let submitBtn = document.querySelector('.woo-modal-main').querySelectorAll('button')[1]
+        submitBtn.click()
+        if (i === array.length - 1) {
+          window.scrollBy(0,1500)
+          setTimeout(a,2000)
+        }
+      },400);
+    },1000 * i);
+  })
+
+}
+
 
 
 
