@@ -52,6 +52,8 @@ class IntegralSolution {
 
 }
 /** @property {IntegralSolution} demo */
-let demo = new IntegralSolution(eval(`(x) => 4 / (1 + x ** 2)`),0,1,100)
+let demo = new IntegralSolution((x) => 9.8 * x,0,3,1000)
 console.log('矩形法',demo.rectangle())
 console.log('梯形法',demo.trapezoid())
+
+console.log(121)

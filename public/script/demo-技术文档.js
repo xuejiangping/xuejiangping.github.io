@@ -6,7 +6,7 @@ async function getData() {
   document.querySelector('#navbar ul').innerHTML = head
   document.getElementById('main-doc').innerHTML = body
 }
-getData()
+// getData()
 
 function generateTemplate(data) {
 
@@ -28,4 +28,4 @@ function generateTemplate(data) {
   },{ head: '',body: '' })
 
 }
-console.log(99999)
+

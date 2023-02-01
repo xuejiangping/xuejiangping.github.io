@@ -427,8 +427,25 @@ function longestCollatzSequence(limit) {
   return res[0]
 }
 
-longestCollatzSequence(14);
+// longestCollatzSequence(14);
 
+function climbStairs(n) {
+  const fb = (n,a,b) => {
+    if (n <= 1) return b
+    return fb(n - 1,b,a + b)
+  }
+  return fb(n,1,1)
+  // if (n === 1) return 1
+  // if (n === 2) return 2
+  // return climbStairs(n - 1) + climbStairs(n - 2)
+}
 
-debugger
+// console.log('climbStairs(3)',climbStairs(44))
 
+function b(n,res) {
+  "use strict"
+  if (n === 0) return res
+  return b(n - 1,res + n)
+}
+console.log('b(1000)',b(1000,0))
+// debugger
