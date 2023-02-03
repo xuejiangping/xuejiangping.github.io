@@ -105,7 +105,18 @@ class MyVue {
   bucket = new WeakMap() // 存储副作用的桶
   activeEffect = null //当前副作用函数
   activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
-
+  jobQueue = new Set()  // 任务队列
+  flushJob = (() => {
+    const p = Promise.resolve()  //创建promise实例，将job添加到微任务队列
+    let isFlushing = false    //队列刷新状态
+    return () => {
+      if (isFlushing) return
+      isFlushing = true
+      p.then(() => {
+        this.jobQueue.forEach(job => job())
+      }).finally(() => isFlushing = false)
+    }
+  })()
 
   /**
    * 渲染器
@@ -239,35 +250,46 @@ class MyVue {
     })
   }
 
+
+
 }
 
 const data1 = { name: 'a',age: 12 }
-const data2 = { title: 'MyVue',n: 1 }
+const data2 = { title: 'MyVue',n: 1,m: 0 }
 const myVue = window.myVue = new MyVue()
 const obj1 = myVue.proxy(data1)
 const obj2 = myVue.proxy(data2)
 console.log(obj1,obj2)
 /**  更新Node  */
-const App = () => {
-  return h('div',{ id: 'app' },[
-    h('div',{ style: 'color:red;font-size:50px' },obj2.title),
-    h('button',{ onClick: () => alert(new Date) },'显示时间'),
-    h(ComponentA),
-    h(ComponentB),
-    h('h1',null,'name:' + obj1.name),
-    h('h1',null,'age:' + obj1.age),
-  ])
-}
+const App = () => h('div',{ id: 'app' },[
+  h('div',{ style: 'color:red;font-size:50px' },obj2.title),
+  h('button',{ onClick: () => alert(new Date) },'显示时间'),
+  h(ComponentA),
+  h(ComponentB),
+  h('h1',null,'name:' + obj1.name),
+  h('h1',null,'age:' + obj1.age),
+])
+
 myVue.effect(() => myVue.renderer(App,document.body))
 
-myVue.effect(() => console.log(obj2.title,obj2.n),{
+myVue.effect(() => console.log('n',obj2.n),{
   sheduler(fn) {
-    console.log('sheduler')
-    fn()
+    myVue.jobQueue.add(fn)
+    myVue.flushJob()
+    // 比如：将副作用函数 放入微队列，控制将副作用函数执行时间
+    // Promise.resolve().then(fn)
   }
 })
-console.log('结束了')
 
-obj2.n++
+myVue.effect(() => console.log('m',obj2.m),{
+  sheduler(fn) {
+    myVue.jobQueue.add(fn)
+    myVue.flushJob()
+    // 比如：将副作用函数 放入微队列，控制将副作用函数执行时间
+    // Promise.resolve().then(fn)
+  }
+})
+Array(9).fill().forEach(() => { obj2.n++; obj2.m++ })
+console.log('结束了')
 //#endregion
 
