@@ -144,8 +144,8 @@ class MyVue {
   }
   /**
    * 挂载组件
-   * @param {e} vNode 
-   * @param {*} container 
+   * @param {vNode} vNode 
+   * @param {HTMLElement} container 
    */
   mountComponent(vNode,container) {
     const { tag } = vNode
@@ -157,8 +157,12 @@ class MyVue {
     }
     this.renderer(subTree,container)
   }
-  // 副作用 函数
-  effect(fn) {
+  /**
+   * 副作用函数
+   * @param {function} fn 
+   * @param {object} options 配置项，如：调度器
+   */
+  effect(fn,options = {}) {
     /**
      * 清除副作用函数的依赖项
      * @param {effectFn} effectFn 
@@ -176,6 +180,7 @@ class MyVue {
       this.activeEffectStack.pop()
       this.activeEffect = this.activeEffectStack[this.activeEffectStack.length - 1]
     }
+    effectFn.options = options
     effectFn.deps = []
     effectFn()
   }
@@ -200,11 +205,18 @@ class MyVue {
       const effects = depsMap.get(key)
       if (!effects) return
       /**
-       *  复制effects集合,因为副作用函数调用时 会触发_track 函数,effects一直添加新元素
-       *  这回导致死循环，所以必须创建effects的副本effectsToRun,来调用副作用函数
+       *  复制effects集合,因为副作用函数调用时 会触发_track ,导致effects的长度一直变化；
+       *  这会致死循环，所以须创建effects的副本，这里：effectsToRun,来调用副作用函数
        */
-      const effectsToRun = new Set(effects)
-      effectsToRun.forEach(effect => effect())
+      const effectsToRun = new Set()
+      //如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
+      effects.forEach(effectFn => effectFn !== this.activeEffect && effectsToRun.add(effectFn))
+      effectsToRun.forEach(effectFn => {
+        const sheduler = effectFn.options.sheduler
+        if (sheduler) {
+          sheduler(effectFn)
+        } else effectFn()
+      })
     }
 
     return new Proxy(data,{
@@ -221,6 +233,8 @@ class MyVue {
         target[key] = newVal
         //触发副作用
         _trigger(target,key)
+        // 定义 Proxy 代理对象的 set 的时候，要返回 return true，特别是在严格模式下，否则，会报错
+        return true
       }
     })
   }
@@ -228,7 +242,7 @@ class MyVue {
 }
 
 const data1 = { name: 'a',age: 12 }
-const data2 = { title: 'MyVue' }
+const data2 = { title: 'MyVue',n: 1 }
 const myVue = window.myVue = new MyVue()
 const obj1 = myVue.proxy(data1)
 const obj2 = myVue.proxy(data2)
@@ -237,7 +251,7 @@ console.log(obj1,obj2)
 const App = () => {
   return h('div',{ id: 'app' },[
     h('div',{ style: 'color:red;font-size:50px' },obj2.title),
-    h('button',{ onClick: alert.bind(window,new Date) },'显示时间'),
+    h('button',{ onClick: () => alert(new Date) },'显示时间'),
     h(ComponentA),
     h(ComponentB),
     h('h1',null,'name:' + obj1.name),
@@ -246,6 +260,14 @@ const App = () => {
 }
 myVue.effect(() => myVue.renderer(App,document.body))
 
+myVue.effect(() => console.log(obj2.title,obj2.n),{
+  sheduler(fn) {
+    console.log('sheduler')
+    fn()
+  }
+})
+console.log('结束了')
 
+obj2.n++
 //#endregion
 
