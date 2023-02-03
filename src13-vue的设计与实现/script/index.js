@@ -103,7 +103,8 @@ function h(tag,props,children) {
 class MyVue {
 
   bucket = new WeakMap() // 存储副作用的桶
-  activeEffect = null
+  activeEffect = null //当前副作用函数
+  activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
 
 
   /**
@@ -170,7 +171,10 @@ class MyVue {
     const effectFn = () => {
       cleanup(effectFn)
       this.activeEffect = effectFn
+      this.activeEffectStack.push(effectFn)
       fn()
+      this.activeEffectStack.pop()
+      this.activeEffect = this.activeEffectStack[this.activeEffectStack.length - 1]
     }
     effectFn.deps = []
     effectFn()
@@ -179,16 +183,15 @@ class MyVue {
   proxy(data) {
     //跟踪副作用
     const _track = (target,key) => {
-      const { activeEffect,bucket } = this
-      if (!activeEffect) return
+      const { activeEffectStack,bucket } = this
+      if (activeEffectStack.length === 0) return
       let depsMap = bucket.get(target)
-      if (!depsMap) {
-        bucket.set(target,(depsMap = new Map()))
-      }
+      !depsMap && bucket.set(target,(depsMap = new Map()))
       let deps = depsMap.get(key)
       if (!deps) depsMap.set(key,(deps = new Set()))
-      deps.add(activeEffect)
-      activeEffect.deps.push(deps)
+      deps.add(this.activeEffect)
+      //给当前activeEffect 收集依赖项deps，方便之后从key 的deps里删除activeEffect
+      this.activeEffect.deps.push(deps)
     }
     //触发副作用
     const _trigger = (target,key) => {
