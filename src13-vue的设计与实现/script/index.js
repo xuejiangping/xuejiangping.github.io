@@ -105,19 +105,9 @@ class MyVue {
   bucket = new WeakMap() // 存储副作用的桶
   activeEffect = null //当前副作用函数
   activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
-  jobQueue = new Set()  // 任务队列
-  flushJob = (() => {
-    const p = Promise.resolve()  //创建promise实例，将job添加到微任务队列
-    let isFlushing = false    //队列刷新状态
-    return () => {
-      if (isFlushing) return
-      isFlushing = true
-      p.then(() => {
-        this.jobQueue.forEach(job => job())
-      }).finally(() => isFlushing = false)
-    }
-  })()
 
+
+  //#region 渲染器
   /**
    * 渲染器
    * @param {vNode} vNode 
@@ -168,10 +158,28 @@ class MyVue {
     }
     this.renderer(subTree,container)
   }
-  /**
-   * 副作用函数
-   * @param {function} fn 
-   * @param {object} options 配置项，如：调度器
+  //#endregion 
+
+  //#region 响应式
+  /** 任务 */
+  jobPlan = {
+    jobQueue: new Set(),  // 任务队列,set去重，相同任务执行一次
+    p: Promise.resolve(), //创建promise实例，将job添加到微任务队列
+    isFlushing: false,  //队列刷新状态
+    /**
+     * 该功能实现 连续多次修改响应式数据但只会触发一次更新（vue）
+     */
+    flushJob() {
+      if (this.isFlushing) return
+      this.isFlushing = true
+      this.p.then(() => {
+        this.jobQueue.forEach(job => job())
+      }).finally(() => this.isFlushing = false)
+    }
+  }
+  /**  
+   * @param {function} fn 副作用函数
+   * @param {{lazy:boolean,dirty:boolean,sheduler:(effectFn:function)=>any}} options 配置项，如：调度器
    */
   effect(fn,options = {}) {
     /**
@@ -187,13 +195,18 @@ class MyVue {
       cleanup(effectFn)
       this.activeEffect = effectFn
       this.activeEffectStack.push(effectFn)
-      fn()
+      const res = fn()
       this.activeEffectStack.pop()
       this.activeEffect = this.activeEffectStack[this.activeEffectStack.length - 1]
+      return res
     }
+
     effectFn.options = options
     effectFn.deps = []
-    effectFn()
+    if (!options.lazy) {
+      effectFn()
+    }
+    return effectFn
   }
 
   proxy(data) {
@@ -249,8 +262,29 @@ class MyVue {
       }
     })
   }
-
-
+  //#endregion
+  /**
+   * 计算属性
+   * @param {()=>any} getter 
+   */
+  computed(getter) {
+    let value,dirty = true
+    const effctFn = this.effect(getter,{
+      lazy: true,
+      sheduler() {
+        dirty = true
+      }
+    })
+    return {
+      get value() {
+        if (dirty) {
+          value = effctFn()
+          dirty = false
+        }
+        return value
+      }
+    }
+  }
 
 }
 
@@ -274,22 +308,18 @@ myVue.effect(() => myVue.renderer(App,document.body))
 
 myVue.effect(() => console.log('n',obj2.n),{
   sheduler(fn) {
-    myVue.jobQueue.add(fn)
-    myVue.flushJob()
+    myVue.jobPlan.jobQueue.add(fn)
+    myVue.jobPlan.flushJob()
     // 比如：将副作用函数 放入微队列，控制将副作用函数执行时间
     // Promise.resolve().then(fn)
-  }
+  },
+  lazy: false
 })
 
-myVue.effect(() => console.log('m',obj2.m),{
-  sheduler(fn) {
-    myVue.jobQueue.add(fn)
-    myVue.flushJob()
-    // 比如：将副作用函数 放入微队列，控制将副作用函数执行时间
-    // Promise.resolve().then(fn)
-  }
-})
+
+
 Array(9).fill().forEach(() => { obj2.n++; obj2.m++ })
-console.log('结束了')
+let sumRes = myVue.computed(() => obj2.m + obj2.n)
+console.log('sumRes',sumRes)
 //#endregion
 

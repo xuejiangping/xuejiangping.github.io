@@ -1,4 +1,5 @@
 {
   "commentTranslate.source": "DarkCWK.youdao-youdao",
-  "commentTranslate.targetLanguage": "zh-CN"
+  "commentTranslate.targetLanguage": "zh-CN",
+  "commentTranslate.multiLineMerge": false
 }
