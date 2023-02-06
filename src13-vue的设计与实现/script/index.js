@@ -200,7 +200,6 @@ class MyVue {
       this.activeEffect = this.activeEffectStack[this.activeEffectStack.length - 1]
       return res
     }
-
     effectFn.options = options
     effectFn.deps = []
     if (!options.lazy) {
@@ -208,92 +207,146 @@ class MyVue {
     }
     return effectFn
   }
-
+  //跟踪副作用
+  _track(target,key) {
+    const { activeEffectStack,bucket } = this
+    if (activeEffectStack.length === 0) return
+    let depsMap = bucket.get(target)
+    !depsMap && bucket.set(target,(depsMap = new Map()))
+    let deps = depsMap.get(key)
+    if (!deps) depsMap.set(key,(deps = new Set()))
+    deps.add(this.activeEffect)
+    //给当前activeEffect 收集依赖项deps，方便之后从key 的deps里删除activeEffect
+    this.activeEffect.deps.push(deps)
+  }
+  //触发副作用
+  _trigger(target,key,values) {
+    let depsMap = this.bucket.get(target)
+    if (!depsMap) return
+    const effects = depsMap.get(key)
+    if (!effects) return
+    /**
+     *  复制effects集合,因为副作用函数调用时 会触发_track ,导致effects的长度一直变化；
+     *  这会致死循环，所以须创建effects的副本，这里：effectsToRun,来调用副作用函数
+     */
+    const effectsToRun = new Set()
+    //如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
+    effects.forEach(effectFn => effectFn !== this.activeEffect && effectsToRun.add(effectFn))
+    effectsToRun.forEach(effectFn => {
+      const sheduler = effectFn.options.sheduler
+      if (sheduler) {
+        sheduler(effectFn,values)
+      } else effectFn()
+    })
+  }
   proxy(data) {
-    //跟踪副作用
-    const _track = (target,key) => {
-      const { activeEffectStack,bucket } = this
-      if (activeEffectStack.length === 0) return
-      let depsMap = bucket.get(target)
-      !depsMap && bucket.set(target,(depsMap = new Map()))
-      let deps = depsMap.get(key)
-      if (!deps) depsMap.set(key,(deps = new Set()))
-      deps.add(this.activeEffect)
-      //给当前activeEffect 收集依赖项deps，方便之后从key 的deps里删除activeEffect
-      this.activeEffect.deps.push(deps)
-    }
-    //触发副作用
-    const _trigger = (target,key) => {
-      let depsMap = this.bucket.get(target)
-      if (!depsMap) return
-      const effects = depsMap.get(key)
-      if (!effects) return
-      /**
-       *  复制effects集合,因为副作用函数调用时 会触发_track ,导致effects的长度一直变化；
-       *  这会致死循环，所以须创建effects的副本，这里：effectsToRun,来调用副作用函数
-       */
-      const effectsToRun = new Set()
-      //如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
-      effects.forEach(effectFn => effectFn !== this.activeEffect && effectsToRun.add(effectFn))
-      effectsToRun.forEach(effectFn => {
-        const sheduler = effectFn.options.sheduler
-        if (sheduler) {
-          sheduler(effectFn)
-        } else effectFn()
-      })
-    }
-
+    const that = this
     return new Proxy(data,{
       // 拦截读取操作
       get(target,key) {
         // 添加副作用
-        _track(target,key)
+        that._track(target,key)
         // 返回属性值
         return target[key]
       },
       // 拦截设置操作
-      set(target,key,newVal) {
+      set(target,key,newValue) {
+        const oldValue = target[key]
         // 设置属性值
-        target[key] = newVal
+        target[key] = newValue
         //触发副作用
-        _trigger(target,key)
+        that._trigger(target,key,{ oldValue,newValue })
         // 定义 Proxy 代理对象的 set 的时候，要返回 return true，特别是在严格模式下，否则，会报错
         return true
       }
     })
   }
   //#endregion
+
+  //#region 计算属性
   /**
-   * 计算属性
    * @param {()=>any} getter 
    */
   computed(getter) {
-    let value,dirty = true
+    /** dirty 为真时返回更新get，假时返回缓存变量 */
+    let value,dirty = true,that = this
     const effctFn = this.effect(getter,{
       lazy: true,
       sheduler() {
         dirty = true
+        that._trigger(obj,'value')
       }
     })
-    return {
+    const obj = {
       get value() {
         if (dirty) {
           value = effctFn()
           dirty = false
         }
+        that._track(obj,'value')
         return value
       }
     }
+    return obj
   }
+  //#endregion
 
+  //#region  watch实现
+  /**
+   * 
+   * @param {{a:string}} obj 
+   * @param {(oldValue,newValue)=>any} handler 
+   */
+  watch(source,handler,options = {}) {
+    let oldValue,newValue
+    // 递归source,
+    const traverse = (value,seen = new Set()) => {
+      if (typeof value !== 'object' || value === null || seen.has(value)) return
+      seen.add(value)
+      for (const key in value) {
+        traverse(value[key],seen)
+      }
+      return value
+    }
+    // cleanup 用来存储用户注册的过期回调
+    let cleanup
+    const onInvalid = (fn) => cleanup = fn
+    const getter = typeof source === 'function' ? source : () => traverse(source)
+    const effctFn = this.effect(() => getter(),{
+      sheduler(_,{ oldValue,newValue }) {
+        if (cleanup) cleanup()
+        handler(oldValue,newValue,onInvalid)
+      },
+      lazy: true
+    })
+    oldValue = effctFn()
+    if (options.immediate) {
+      handler(oldValue,newValue,onInvalid)
+    }
+  }
+  //#endregion
 }
 
 const data1 = { name: 'a',age: 12 }
 const data2 = { title: 'MyVue',n: 1,m: 0 }
+const data3 = { a: 1,b: 2,c: { d: 3 } }
 const myVue = window.myVue = new MyVue()
+
 const obj1 = myVue.proxy(data1)
 const obj2 = myVue.proxy(data2)
-console.log(obj1,obj2)
+const obj3 = myVue.proxy(data3)
+// 测试计算属性
+let sumRes = myVue.computed(() => obj2.m + obj2.n)
+
+let i = 2
+
+myVue.watch(obj3,(oldVal,newVal,onInvalid) => {
+  let expired = false
+  onInvalid(() => expired = true)
+  if (!expired) console.log(123)
+},{ immediate: false })
+
+window.test = { obj1,obj2,obj3,sumRes,myVue }
 /**  更新Node  */
 const App = () => h('div',{ id: 'app' },[
   h('div',{ style: 'color:red;font-size:50px' },obj2.title),
@@ -302,24 +355,18 @@ const App = () => h('div',{ id: 'app' },[
   h(ComponentB),
   h('h1',null,'name:' + obj1.name),
   h('h1',null,'age:' + obj1.age),
+  h('h1',null,'测试计算属性sumRes:' + sumRes.value),
+
 ])
+myVue.effect(() => {
+  myVue.renderer(App,document.body)
+})
 
-myVue.effect(() => myVue.renderer(App,document.body))
-
-myVue.effect(() => console.log('n',obj2.n),{
+myVue.effect(() => obj2.n,{
   sheduler(fn) {
     myVue.jobPlan.jobQueue.add(fn)
     myVue.jobPlan.flushJob()
-    // 比如：将副作用函数 放入微队列，控制将副作用函数执行时间
-    // Promise.resolve().then(fn)
-  },
-  lazy: false
+  }
 })
-
-
-
-Array(9).fill().forEach(() => { obj2.n++; obj2.m++ })
-let sumRes = myVue.computed(() => obj2.m + obj2.n)
-console.log('sumRes',sumRes)
 //#endregion
 
