@@ -27,74 +27,7 @@ function h(tag,props,children) {
 
 //#endregion
 
-//#region 响应式系统
 
-// function test1() {
-//   // 存储副作用的桶
-//   const bucket = new Set()
-//   // 原始数据
-//   const data = { name: 'a' }
-//   const obj = window.obj = new Proxy(data,{
-//     get(target,key) {
-//       bucket.add(effect)
-//       return target[key]
-//     },
-//     set(target,key,newVal) {
-//       target[key] = newVal
-//       bucket.forEach(fn => fn())
-//       return true
-//     }
-//   })
-//   function effect() {
-//     app.appendChild(document.createTextNode(obj.text))
-//   }
-//   effect()
-// }
-// /**
-//  *
-//  * @param {object} data
-//  * @param {WeakMap} bucket
-//  * @returns
-//  */
-// function proxy(data,bucket) {
-//   const _track = (target,key,activeEffect) => {
-//     if (!activeEffect) return
-//     let depsMap = bucket.get(target)
-//     if (!depsMap) {
-//       bucket.set(target,(desMap = new Map()))
-//     }
-//     let deps = depsMap.get(key)
-//     if (!deps) depsMap.set(key,(deps = new Set()))
-//     deps.add(activeEffect)
-//   }
-//   const _trigger = (target,key) => {
-//     let depsMap = bucket.get(target)
-//     if (!depsMap) return
-//     let effects = depsMap.get(key)
-//     effects && effects.forEach(effect => effect())
-//   }
-
-//   return new Proxy(data,{
-//     // 拦截读取操作
-//     get(target,key) {
-//       // 添加副作用
-//       _track(target,key)
-//       // 返回属性值
-//       return target[key]
-//     },
-//     // 拦截设置操作
-//     set(target,key,newVal) {
-//       // 设置属性值
-//       target[key] = newVal
-//       //触发副作用
-//       _trigger(target,key)
-//     }
-//   })
-// }
-
-
-
-//#endregion
 
 //#region 更加完善的响应式
 
@@ -105,8 +38,8 @@ class MyVue {
   bucket = new WeakMap() // 存储副作用的桶
   activeEffect = null //当前副作用函数
   activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
-
-
+  ITERATE = Symbol()     // for in 用于追踪的key
+  TriggerType = { SET: 'SET',ADD: 'ADD',DELETE: 'DELETE' }
   //#region 渲染器
   /**
    * 渲染器
@@ -178,6 +111,7 @@ class MyVue {
     }
   }
   /**  
+   * 副作用
    * @param {function} fn 副作用函数
    * @param {{lazy:boolean,dirty:boolean,sheduler:(effectFn:function)=>any}} options 配置项，如：调度器
    */
@@ -202,9 +136,7 @@ class MyVue {
     }
     effectFn.options = options
     effectFn.deps = []
-    if (!options.lazy) {
-      effectFn()
-    }
+    !options.lazy && effectFn()
     return effectFn
   }
   //跟踪副作用
@@ -214,24 +146,29 @@ class MyVue {
     let depsMap = bucket.get(target)
     !depsMap && bucket.set(target,(depsMap = new Map()))
     let deps = depsMap.get(key)
-    if (!deps) depsMap.set(key,(deps = new Set()))
+    !deps && depsMap.set(key,(deps = new Set()))
     deps.add(this.activeEffect)
     //给当前activeEffect 收集依赖项deps，方便之后从key 的deps里删除activeEffect
     this.activeEffect.deps.push(deps)
   }
   //触发副作用
-  _trigger(target,key,values) {
+  _trigger(target,key,params) {
+    const { oldValue,newValue,type } = params
+    const values = { oldValue,newValue }
     let depsMap = this.bucket.get(target)
     if (!depsMap) return
+    // 与key相关的副作用函数
     const effects = depsMap.get(key)
-    if (!effects) return
-    /**
-     *  复制effects集合,因为副作用函数调用时 会触发_track ,导致effects的长度一直变化；
-     *  这会致死循环，所以须创建effects的副本，这里：effectsToRun,来调用副作用函数
-     */
+    //  创建集合effectsToRun,保存需要执行的副作用函数
     const effectsToRun = new Set()
-    //如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
-    effects.forEach(effectFn => effectFn !== this.activeEffect && effectsToRun.add(effectFn))
+    /** @callback cb  effectFn !== this.activeEffect：用于 确保将要执行的副作用函数不等于activeEffect，避免无限递归 */
+    const cb = (effectFn) => effectFn !== this.activeEffect && effectsToRun.add(effectFn)
+    effects && effects.forEach(cb)
+    if (type === this.TriggerType.ADD || type === this.TriggerType.DELETE) {
+      // 与ITERATE相关的副作用函数
+      const itrateEffects = depsMap.get(this.ITERATE)
+      itrateEffects && itrateEffects.forEach(cb)
+    }
     effectsToRun.forEach(effectFn => {
       const sheduler = effectFn.options.sheduler
       if (sheduler) {
@@ -243,22 +180,37 @@ class MyVue {
     const that = this
     return new Proxy(data,{
       // 拦截读取操作
-      get(target,key) {
+      get(target,key,r) {
         // 添加副作用
         that._track(target,key)
         // 返回属性值
-        return target[key]
+        return Reflect.get(target,key,r)
       },
       // 拦截设置操作
-      set(target,key,newValue) {
+      set(target,key,newValue,r) {
         const oldValue = target[key]
+        const type = Object.prototype.hasOwnProperty.call(target,key) ? that.TriggerType.SET : that.TriggerType.ADD
         // 设置属性值
-        target[key] = newValue
+        Reflect.set(target,key,newValue,r)
+        const params = { oldValue,newValue,type }
         //触发副作用
-        that._trigger(target,key,{ oldValue,newValue })
+        that._trigger(target,key,params)
         // 定义 Proxy 代理对象的 set 的时候，要返回 return true，特别是在严格模式下，否则，会报错
         return true
+      },
+      // 拦截 for in 
+      ownKeys(t) {
+        that._track(t,that.ITERATE)
+        return Reflect.ownKeys(t)
+      },
+      //拦截 delete
+      deleteProperty(t,k) {
+        const hasKey = Object.prototype.hasOwnProperty.call(t,k)
+        const res = Reflect.deleteProperty(t,k)
+        if (res && hasKey) that._trigger(t,that.ITERATE,{ type: that.TriggerType.DELETE })
+        return res
       }
+
     })
   }
   //#endregion
@@ -293,9 +245,8 @@ class MyVue {
 
   //#region  watch实现
   /**
-   * 
    * @param {{a:string}} obj 
-   * @param {(oldValue,newValue)=>any} handler 
+   * @param {(oldValue,newValue,onInvalid:function)=>any} handler 
    */
   watch(source,handler,options = {}) {
     let oldValue,newValue
@@ -312,7 +263,7 @@ class MyVue {
     let cleanup
     const onInvalid = (fn) => cleanup = fn
     const getter = typeof source === 'function' ? source : () => traverse(source)
-    const effctFn = this.effect(() => getter(),{
+    const effctFn = this.effect(getter,{
       sheduler(_,{ oldValue,newValue }) {
         if (cleanup) cleanup()
         handler(oldValue,newValue,onInvalid)
@@ -325,20 +276,20 @@ class MyVue {
     }
   }
   //#endregion
+
+
 }
 
-const data1 = { name: 'a',age: 12 }
+const data1 = { name: 'a',age: 12,}
 const data2 = { title: 'MyVue',n: 1,m: 0 }
 const data3 = { a: 1,b: 2,c: { d: 3 } }
-const myVue = window.myVue = new MyVue()
+const myVue = new MyVue()
 
 const obj1 = myVue.proxy(data1)
 const obj2 = myVue.proxy(data2)
 const obj3 = myVue.proxy(data3)
 // 测试计算属性
 let sumRes = myVue.computed(() => obj2.m + obj2.n)
-
-let i = 2
 
 myVue.watch(obj3,(oldVal,newVal,onInvalid) => {
   let expired = false
@@ -361,12 +312,18 @@ const App = () => h('div',{ id: 'app' },[
 myVue.effect(() => {
   myVue.renderer(App,document.body)
 })
-
+// 测试 副作用函数fn放入微队列,多次修改响应式数据，只执行最终结果
 myVue.effect(() => obj2.n,{
   sheduler(fn) {
     myVue.jobPlan.jobQueue.add(fn)
     myVue.jobPlan.flushJob()
   }
 })
+// 测试for in 
+myVue.effect(() => {
+  for (let k in obj2) {
+    console.log('k',k)
+  }
+})
 //#endregion
-
+delete obj2.n
