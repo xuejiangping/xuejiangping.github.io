@@ -29,17 +29,24 @@ function h(tag,props,children) {
 
 
 
-//#region 更加完善的响应式
 
 
-
+/**
+ * 自己实现的 Vue
+ * @class 
+ */
 class MyVue {
-
+  /**@type { WeakMap < object,Map < string | symbol,Set < function>>>} */
   bucket = new WeakMap() // 存储副作用的桶
+
   activeEffect = null //当前副作用函数
   activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
-  ITERATE = Symbol()     // for in 用于追踪的key
+  ITERATE = Symbol('ITERATE')     // for in 用于追踪的key
   TriggerType = { SET: 'SET',ADD: 'ADD',DELETE: 'DELETE' }
+  myLog(label,...res) {
+    console.log(`${label} ==>`,...res)
+    // console.table({ [label]: res })
+  }
   //#region 渲染器
   /**
    * 渲染器
@@ -94,7 +101,7 @@ class MyVue {
   //#endregion 
 
   //#region 响应式
-  /** 任务 */
+  /** 微任务 */
   jobPlan = {
     jobQueue: new Set(),  // 任务队列,set去重，相同任务执行一次
     p: Promise.resolve(), //创建promise实例，将job添加到微任务队列
@@ -113,7 +120,7 @@ class MyVue {
   /**  
    * 副作用
    * @param {function} fn 副作用函数
-   * @param {{lazy:boolean,dirty:boolean,sheduler:(effectFn:function)=>any}} options 配置项，如：调度器
+   * @param {{lazy:boolean,dirty:boolean,sheduler:function}} options 配置项，如：调度器
    */
   effect(fn,options = {}) {
     /**
@@ -141,21 +148,21 @@ class MyVue {
   }
   //跟踪副作用
   _track(target,key) {
-    const { activeEffectStack,bucket } = this
+    const { activeEffectStack,bucket,activeEffect } = this
     if (activeEffectStack.length === 0) return
     let depsMap = bucket.get(target)
     !depsMap && bucket.set(target,(depsMap = new Map()))
     let deps = depsMap.get(key)
     !deps && depsMap.set(key,(deps = new Set()))
-    deps.add(this.activeEffect)
+    deps.add(activeEffect)
     //给当前activeEffect 收集依赖项deps，方便之后从key 的deps里删除activeEffect
-    this.activeEffect.deps.push(deps)
+    activeEffect.deps.push(deps)
   }
   //触发副作用
   _trigger(target,key,params) {
-    const { oldValue,newValue,type } = params
-    const values = { oldValue,newValue }
-    let depsMap = this.bucket.get(target)
+    const { oldVal,newVal,type } = params
+    const values = { oldVal,newVal }
+    const depsMap = this.bucket.get(target)
     if (!depsMap) return
     // 与key相关的副作用函数
     const effects = depsMap.get(key)
@@ -164,6 +171,7 @@ class MyVue {
     /** @callback cb  effectFn !== this.activeEffect：用于 确保将要执行的副作用函数不等于activeEffect，避免无限递归 */
     const cb = (effectFn) => effectFn !== this.activeEffect && effectsToRun.add(effectFn)
     effects && effects.forEach(cb)
+    // 和迭代相关的副作用 itrateEffects
     if (type === this.TriggerType.ADD || type === this.TriggerType.DELETE) {
       // 与ITERATE相关的副作用函数
       const itrateEffects = depsMap.get(this.ITERATE)
@@ -176,42 +184,69 @@ class MyVue {
       } else effectFn()
     })
   }
-  proxy(data) {
-    const that = this
+  /**
+   * @typedef {{isShallow?: boolean,isReadonly?:boolean}} reactiveOptions
+   */
+  /**
+   * @param  data 需要代理的原始数据
+   * @param {reactiveOptions} options 
+   * isShallow:深度响应 
+   * isReadonly: 只读属性
+   */
+  reactive(data,options = { isShallow: false }) {
+    const _this = this
+    const { isShallow,isReadonly } = options
     return new Proxy(data,{
       // 拦截读取操作
       get(target,key,r) {
+        if (key === 'raw') return target
         // 添加副作用
-        that._track(target,key)
-        // 返回属性值
-        return Reflect.get(target,key,r)
+        !isReadonly && _this._track(target,key)
+        const res = Reflect.get(target,key,r)
+        // 判断 res 类型，实现 深度响应
+        return !isShallow && typeof res === 'object' && res !== null
+          ? _this.reactive(res,options) : res
       },
       // 拦截设置操作
-      set(target,key,newValue,r) {
-        const oldValue = target[key]
-        const type = Object.prototype.hasOwnProperty.call(target,key) ? that.TriggerType.SET : that.TriggerType.ADD
+      set(target,key,newVal,r) {
+        if (key === 'd') console.log('d',target)
+        const oldVal = target[key]
+        const type = Object.prototype.hasOwnProperty.call(target,key) ? _this.TriggerType.SET : _this.TriggerType.ADD
+        if (isReadonly) return console.warn(`属性${key}为只读属性`)
         // 设置属性值
-        Reflect.set(target,key,newValue,r)
-        const params = { oldValue,newValue,type }
-        //触发副作用
-        that._trigger(target,key,params)
+        const res = Reflect.set(target,key,newVal)
+        // 为真时，才执行 triggle，屏蔽由原型引起的更新，避免不必要的更新操作。
+        if (r.raw === target) {
+
+          // 确保 新值!==旧值 且不能同为NAN
+          if (oldVal !== newVal && oldVal === oldVal) {
+            const params = { oldVal,newVal,type }
+            _this._trigger(target,key,params)
+          }
+        }
+
         // 定义 Proxy 代理对象的 set 的时候，要返回 return true，特别是在严格模式下，否则，会报错
-        return true
+        return res
       },
       // 拦截 for in 
       ownKeys(t) {
-        that._track(t,that.ITERATE)
+        _this._track(t,_this.ITERATE)
         return Reflect.ownKeys(t)
       },
-      //拦截 delete
+      //拦截 delete,会触发for in 相关的副作用
       deleteProperty(t,k) {
+        if (isReadonly) return console.warn(`属性${k}为只读属性`)
         const hasKey = Object.prototype.hasOwnProperty.call(t,k)
         const res = Reflect.deleteProperty(t,k)
-        if (res && hasKey) that._trigger(t,that.ITERATE,{ type: that.TriggerType.DELETE })
+        if (res && hasKey) _this._trigger(t,_this.ITERATE,{ type: _this.TriggerType.DELETE })
         return res
       }
 
     })
+  }
+  // 浅响应
+  shallowReactive(data,options) {
+    return this.reactive(data,{ isShallow: true,...options })
   }
   //#endregion
 
@@ -221,12 +256,12 @@ class MyVue {
    */
   computed(getter) {
     /** dirty 为真时返回更新get，假时返回缓存变量 */
-    let value,dirty = true,that = this
+    let value,dirty = true,_this = this
     const effctFn = this.effect(getter,{
       lazy: true,
       sheduler() {
         dirty = true
-        that._trigger(obj,'value')
+        _this._trigger(obj,'value')
       }
     })
     const obj = {
@@ -235,7 +270,7 @@ class MyVue {
           value = effctFn()
           dirty = false
         }
-        that._track(obj,'value')
+        _this._track(obj,'value')
         return value
       }
     }
@@ -244,12 +279,9 @@ class MyVue {
   //#endregion
 
   //#region  watch实现
-  /**
-   * @param {{a:string}} obj 
-   * @param {(oldValue,newValue,onInvalid:function)=>any} handler 
-   */
+
   watch(source,handler,options = {}) {
-    let oldValue,newValue
+    let oldVal,newVal
     // 递归source,
     const traverse = (value,seen = new Set()) => {
       if (typeof value !== 'object' || value === null || seen.has(value)) return
@@ -264,15 +296,15 @@ class MyVue {
     const onInvalid = (fn) => cleanup = fn
     const getter = typeof source === 'function' ? source : () => traverse(source)
     const effctFn = this.effect(getter,{
-      sheduler(_,{ oldValue,newValue }) {
+      sheduler(_,{ oldVal,newVal }) {
         if (cleanup) cleanup()
-        handler(oldValue,newValue,onInvalid)
+        handler(oldVal,newVal,onInvalid)
       },
       lazy: true
     })
-    oldValue = effctFn()
+    oldVal = effctFn()
     if (options.immediate) {
-      handler(oldValue,newValue,onInvalid)
+      handler(oldVal,newVal,onInvalid)
     }
   }
   //#endregion
@@ -280,50 +312,94 @@ class MyVue {
 
 }
 
-const data1 = { name: 'a',age: 12,}
-const data2 = { title: 'MyVue',n: 1,m: 0 }
-const data3 = { a: 1,b: 2,c: { d: 3 } }
 const myVue = new MyVue()
+//#region 原始数据
+const rawData = {
+  obj1: { name: 'a',age: 12,},
+  obj2: { title: 'MyVue',n: 1,m: 0,o: 3 },
+  obj3: { a: 1,b: 2,c: { d: 3 } },
+  obj4: { e: { f: 'f' } },
+  arr1: [{ a: 1 },2]
+}
+//#endregion
 
-const obj1 = myVue.proxy(data1)
-const obj2 = myVue.proxy(data2)
-const obj3 = myVue.proxy(data3)
-// 测试计算属性
-let sumRes = myVue.computed(() => obj2.m + obj2.n)
+//#region reactive数据
+const reactiveData = {
+  obj1: myVue.reactive(rawData.obj1),
+  obj2: myVue.reactive(rawData.obj2),
+  obj3: myVue.reactive(rawData.obj3,{ isReadonly: true }),
+  obj4: myVue.shallowReactive(rawData.obj4,{ isReadonly: true }),
+  arr1: myVue.reactive(rawData.arr1)
+}
+//#endregion
 
-myVue.watch(obj3,(oldVal,newVal,onInvalid) => {
+window.test = { rawData,reactiveData,myVue }
+
+//#region  测试各项功能
+// 测试 计算属性
+let sumRes = myVue.computed(() => reactiveData.obj2.m + reactiveData.obj2.n)
+
+// 测试 watch 和 任务时效
+myVue.watch(reactiveData.obj3,(oldVal,newVal,onInvalid) => {
   let expired = false
   onInvalid(() => expired = true)
-  if (!expired) console.log(123)
+  // await 耗时异步任务(),若在等待期间副作用函数再次执行，开始新的异步任务
+  // () => expired = true 会执行，导致不会继续执行
+  if (expired) return
+  // 若任务没有过期，继续执行下面代码
+  // console.log('watch 和 任务时效')
+  myVue.myLog('watch 和 任务时效')
 },{ immediate: false })
 
-window.test = { obj1,obj2,obj3,sumRes,myVue }
+
 /**  更新Node  */
 const App = () => h('div',{ id: 'app' },[
-  h('div',{ style: 'color:red;font-size:50px' },obj2.title),
+  h('div',{ style: 'color:red;font-size:50px' },reactiveData.obj2.title),
   h('button',{ onClick: () => alert(new Date) },'显示时间'),
   h(ComponentA),
   h(ComponentB),
-  h('h1',null,'name:' + obj1.name),
-  h('h1',null,'age:' + obj1.age),
+  h('h1',null,'name:' + reactiveData.obj1.name),
+  h('h1',null,'age:' + reactiveData.obj1.age),
   h('h1',null,'测试计算属性sumRes:' + sumRes.value),
 
 ])
+
+// 测试 响应式 renderer 渲染器
 myVue.effect(() => {
   myVue.renderer(App,document.body)
 })
 // 测试 副作用函数fn放入微队列,多次修改响应式数据，只执行最终结果
-myVue.effect(() => obj2.n,{
+myVue.effect(() => reactiveData.obj2.n,{
   sheduler(fn) {
     myVue.jobPlan.jobQueue.add(fn)
     myVue.jobPlan.flushJob()
   }
 })
-// 测试for in 
+// 测试 for in 
 myVue.effect(() => {
-  for (let k in obj2) {
-    console.log('k',k)
+  for (let k in reactiveData.obj2) {
+    // console.log('测试 for in ==>',k)
   }
 })
+// delete reactiveData.obj2.n
+
+// 测试 避免因原型引起的不必要的更新
+Object.setPrototypeOf(rawData.obj1,rawData.obj2)
+myVue.effect(() => myVue.myLog('避免因原型引起的不必要的更新',reactiveData.obj1.o))
+
+// 测试 深响应
+myVue.effect(() => {
+  myVue.myLog('深响应',reactiveData.obj3.c.d)
+})
+// reactiveData.obj3.c.d = 4
+
+//测试 浅响应
+myVue.effect(() => {
+  myVue.myLog('浅响应',reactiveData.obj4.e.f)
+})
+// reactiveData.obj3.e = { f: '88' }
+//测试 数组
+myVue.effect(() => myVue.myLog('测试 数组',reactiveData.arr1.length))
+reactiveData.arr1[2] = 3
 //#endregion
-delete obj2.n
+
