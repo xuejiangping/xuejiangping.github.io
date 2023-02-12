@@ -32,21 +32,66 @@ function h(tag,props,children) {
 
 
 /**
- * 自己实现的 Vue
+ * 实现Vue
  * @class 
  */
 class MyVue {
   /**@type { WeakMap < object,Map < string | symbol,Set < function>>>} */
   bucket = new WeakMap() // 存储副作用的桶
-
   activeEffect = null //当前副作用函数
   activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
   ITERATE = Symbol('ITERATE')     // for in 用于追踪的key
-  TriggerType = { SET: 'SET',ADD: 'ADD',DELETE: 'DELETE' }
-  myLog(label,...res) {
+  ITERATE_KEY_SET = Symbol('ITERATE_KEY_SET')  // 追踪 set集合中 size变化
+  TriggerType = { SET: 'SET',ADD: 'ADD',DELETE: 'DELETE' }  // 触发set 的类型 
+  reactiveMap = new Map()    // 存储 原始数据到代理数据的映射
+  _shouldTrack = true   //代表是否运行 track ()追踪
+  log(label,...res) {
     console.log(`${label} ==>`,...res)
     // console.table({ [label]: res })
   }
+
+
+
+
+  // 创建原型属性,ArrayInstrmentations 重写部分数组方法
+  ArrayInstrmentations = ((arrMethods,_this) => {
+    const group1 = ['indexOf','lastIndexOf'] //index相关
+    const group2 = ['includes']         //
+    const group3 = ['push','pop','shift','unshift','splice']  //和数组length 相关
+    const match = (group,v) => group.includes(v)
+    return arrMethods.reduce((t,v) => {
+      const originMethod = Array.prototype[v]
+      t[v] = function (...args) {  // this 指向代理的数组
+        let res
+        if (match(group1,v)) {
+          res = originMethod.apply(this,args)
+          res < 0 && (res = originMethod.apply(this.raw,args))
+        } else if (match(group2,v)) {
+          res = originMethod.apply(this,args)
+          res === false && (res = originMethod.apply(this.raw,args))
+        } else if (match(group3,v)) {
+          _this._shouldTrack = false
+          res = originMethod.apply(this,args)
+          _this._shouldTrack = true
+        }
+        return res
+      }
+      return t
+    },{})
+  }
+
+  )(['includes','indexOf','lastIndexOf','push','pop','shift','unshift','splice'],this)
+  // 重写 Set 部分方法
+  SetInstrumentations = ((setMethods,_this) => {
+    return setMethods.reduce((t,v) => {
+      t[v] = function (...args) {
+        let res = this[v](...args)  // this 会指向set本身，非代理
+        _this._trigger(this,_this.ITERATE_KEY_SET)
+        return res
+      }
+      return t
+    },{})
+  })(['add','clear','delete'],this)
   //#region 渲染器
   /**
    * 渲染器
@@ -148,8 +193,9 @@ class MyVue {
   }
   //跟踪副作用
   _track(target,key) {
-    const { activeEffectStack,bucket,activeEffect } = this
-    if (activeEffectStack.length === 0) return
+
+    const { _shouldTrack,activeEffectStack,bucket,activeEffect } = this
+    if (!_shouldTrack || activeEffectStack.length === 0) return  //全局_shouldTrack 以及 activeEffectStack 决定追踪
     let depsMap = bucket.get(target)
     !depsMap && bucket.set(target,(depsMap = new Map()))
     let deps = depsMap.get(key)
@@ -159,7 +205,8 @@ class MyVue {
     activeEffect.deps.push(deps)
   }
   //触发副作用
-  _trigger(target,key,params) {
+  _trigger(target,key,params = {}) {
+
     const { oldVal,newVal,type } = params
     const values = { oldVal,newVal }
     const depsMap = this.bucket.get(target)
@@ -171,12 +218,18 @@ class MyVue {
     /** @callback cb  effectFn !== this.activeEffect：用于 确保将要执行的副作用函数不等于activeEffect，避免无限递归 */
     const cb = (effectFn) => effectFn !== this.activeEffect && effectsToRun.add(effectFn)
     effects && effects.forEach(cb)
-    // 和迭代相关的副作用 itrateEffects
-    if (type === this.TriggerType.ADD || type === this.TriggerType.DELETE) {
-      // 与ITERATE相关的副作用函数
-      const itrateEffects = depsMap.get(this.ITERATE)
-      itrateEffects && itrateEffects.forEach(cb)
+    // if (typeof key === 'symbol') debugger
+    if (Array.isArray(target)) {
+      if (key === 'length') {
+        // 数组修改length 会影响 数组中index大于等于newVal的元素
+        depsMap.forEach((effects,k) => newVal <= k && effects.forEach(cb))
+      } else if (Number.isInteger(+key) && type === this.TriggerType.ADD) {
+        depsMap.get('length')?.forEach(cb)
+      }
+    } else if (type === this.TriggerType.ADD || type === this.TriggerType.DELETE) {
+      depsMap.get(this.ITERATE)?.forEach(cb) //与ITERATE相关的副作用函数
     }
+
     effectsToRun.forEach(effectFn => {
       const sheduler = effectFn.options.sheduler
       if (sheduler) {
@@ -194,34 +247,73 @@ class MyVue {
    * isReadonly: 只读属性
    */
   reactive(data,options = { isShallow: false }) {
+    // 检查 data 是否已有代理，若有直接返回
+    const existentProxy = this.reactiveMap.get(data)
+    if (existentProxy) return existentProxy
     const _this = this
+    const { TriggerType: { ADD,DELETE,SET } } = _this
     const { isShallow,isReadonly } = options
-    return new Proxy(data,{
+    const isArrayMethod = (key) => key !== 'length' && Array.prototype.hasOwnProperty(key)
+
+    const proxy = new Proxy(data,{
+
       // 拦截读取操作
       get(target,key,r) {
         if (key === 'raw') return target
+        const isArr = Array.isArray(target)
+        // 判断需要追踪的 情况
+        if (!isReadonly && typeof key !== 'symbol') {
+          if (isArr) {
+            !isArrayMethod && _this._track(target,key)
+          } else if (target instanceof Set) {
+            key === 'size' && _this._track(target,_this.ITERATE_KEY_SET)
+          } else {
+            _this._track(target,key)
+          }
+        }
         // 添加副作用
-        !isReadonly && _this._track(target,key)
-        const res = Reflect.get(target,key,r)
-        // 判断 res 类型，实现 深度响应
+        let res
+        // 代理部分数组方法 
+        if (isArr && _this.ArrayInstrmentations.hasOwnProperty(key)) {
+          res = Reflect.get(_this.ArrayInstrmentations,key,r)
+        } else if (target instanceof Set) {
+          // 代理部分Set 方法
+          if (_this.SetInstrumentations.hasOwnProperty(key)) {
+            res = Reflect.get(_this.SetInstrumentations,key)
+          } else {
+            res = Reflect.get(target,key,target)
+          }
+          // 若 res 是函数须绑定this 到 Set 自身,Set的方法才能调用
+          typeof res === 'function' && (res = res.bind(target))
+        } else {
+          res = Reflect.get(target,key,r)
+        }
+
+
+        // 判断 res 类型，实现深度响应
         return !isShallow && typeof res === 'object' && res !== null
           ? _this.reactive(res,options) : res
       },
       // 拦截设置操作
       set(target,key,newVal,r) {
-        if (key === 'd') console.log('d',target)
+        // if (key === 'length') console.log('d',target)
+
         const oldVal = target[key]
-        const type = Object.prototype.hasOwnProperty.call(target,key) ? _this.TriggerType.SET : _this.TriggerType.ADD
+        const hasKey = Object.prototype.hasOwnProperty.call(target,key)
+        // type   若是数组 根据 length判断，如不是 根据hasOwnProperty
+
+        const type = hasKey ? SET : ADD
+
         if (isReadonly) return console.warn(`属性${key}为只读属性`)
         // 设置属性值
         const res = Reflect.set(target,key,newVal)
         // 为真时，才执行 triggle，屏蔽由原型引起的更新，避免不必要的更新操作。
         if (r.raw === target) {
-
           // 确保 新值!==旧值 且不能同为NAN
           if (oldVal !== newVal && oldVal === oldVal) {
             const params = { oldVal,newVal,type }
             _this._trigger(target,key,params)
+
           }
         }
 
@@ -230,7 +322,8 @@ class MyVue {
       },
       // 拦截 for in 
       ownKeys(t) {
-        _this._track(t,_this.ITERATE)
+        // _this.log('t',t)
+        _this._track(t,Array.isArray(t) ? 'length' : _this.ITERATE)
         return Reflect.ownKeys(t)
       },
       //拦截 delete,会触发for in 相关的副作用
@@ -238,11 +331,14 @@ class MyVue {
         if (isReadonly) return console.warn(`属性${k}为只读属性`)
         const hasKey = Object.prototype.hasOwnProperty.call(t,k)
         const res = Reflect.deleteProperty(t,k)
-        if (res && hasKey) _this._trigger(t,_this.ITERATE,{ type: _this.TriggerType.DELETE })
+        const key = Array.isArray(t) ? 'length' : _this.ITERATE
+        if (res && hasKey) _this._trigger(t,key,{ type: DELETE })
         return res
       }
 
     })
+    this.reactiveMap.set(data,proxy)
+    return proxy
   }
   // 浅响应
   shallowReactive(data,options) {
@@ -311,95 +407,4 @@ class MyVue {
 
 
 }
-
-const myVue = new MyVue()
-//#region 原始数据
-const rawData = {
-  obj1: { name: 'a',age: 12,},
-  obj2: { title: 'MyVue',n: 1,m: 0,o: 3 },
-  obj3: { a: 1,b: 2,c: { d: 3 } },
-  obj4: { e: { f: 'f' } },
-  arr1: [{ a: 1 },2]
-}
-//#endregion
-
-//#region reactive数据
-const reactiveData = {
-  obj1: myVue.reactive(rawData.obj1),
-  obj2: myVue.reactive(rawData.obj2),
-  obj3: myVue.reactive(rawData.obj3,{ isReadonly: true }),
-  obj4: myVue.shallowReactive(rawData.obj4,{ isReadonly: true }),
-  arr1: myVue.reactive(rawData.arr1)
-}
-//#endregion
-
-window.test = { rawData,reactiveData,myVue }
-
-//#region  测试各项功能
-// 测试 计算属性
-let sumRes = myVue.computed(() => reactiveData.obj2.m + reactiveData.obj2.n)
-
-// 测试 watch 和 任务时效
-myVue.watch(reactiveData.obj3,(oldVal,newVal,onInvalid) => {
-  let expired = false
-  onInvalid(() => expired = true)
-  // await 耗时异步任务(),若在等待期间副作用函数再次执行，开始新的异步任务
-  // () => expired = true 会执行，导致不会继续执行
-  if (expired) return
-  // 若任务没有过期，继续执行下面代码
-  // console.log('watch 和 任务时效')
-  myVue.myLog('watch 和 任务时效')
-},{ immediate: false })
-
-
-/**  更新Node  */
-const App = () => h('div',{ id: 'app' },[
-  h('div',{ style: 'color:red;font-size:50px' },reactiveData.obj2.title),
-  h('button',{ onClick: () => alert(new Date) },'显示时间'),
-  h(ComponentA),
-  h(ComponentB),
-  h('h1',null,'name:' + reactiveData.obj1.name),
-  h('h1',null,'age:' + reactiveData.obj1.age),
-  h('h1',null,'测试计算属性sumRes:' + sumRes.value),
-
-])
-
-// 测试 响应式 renderer 渲染器
-myVue.effect(() => {
-  myVue.renderer(App,document.body)
-})
-// 测试 副作用函数fn放入微队列,多次修改响应式数据，只执行最终结果
-myVue.effect(() => reactiveData.obj2.n,{
-  sheduler(fn) {
-    myVue.jobPlan.jobQueue.add(fn)
-    myVue.jobPlan.flushJob()
-  }
-})
-// 测试 for in 
-myVue.effect(() => {
-  for (let k in reactiveData.obj2) {
-    // console.log('测试 for in ==>',k)
-  }
-})
-// delete reactiveData.obj2.n
-
-// 测试 避免因原型引起的不必要的更新
-Object.setPrototypeOf(rawData.obj1,rawData.obj2)
-myVue.effect(() => myVue.myLog('避免因原型引起的不必要的更新',reactiveData.obj1.o))
-
-// 测试 深响应
-myVue.effect(() => {
-  myVue.myLog('深响应',reactiveData.obj3.c.d)
-})
-// reactiveData.obj3.c.d = 4
-
-//测试 浅响应
-myVue.effect(() => {
-  myVue.myLog('浅响应',reactiveData.obj4.e.f)
-})
-// reactiveData.obj3.e = { f: '88' }
-//测试 数组
-myVue.effect(() => myVue.myLog('测试 数组',reactiveData.arr1.length))
-reactiveData.arr1[2] = 3
-//#endregion
 

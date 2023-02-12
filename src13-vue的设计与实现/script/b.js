@@ -47,7 +47,7 @@ function* EnumerateObjectProperties(obj) {
 
 
 // })
-
+//  向页面 慢慢添加文本
 function fn() {
   fetch(location.href + '/script/index.js').then(res => res.text()).then(str => {
 
