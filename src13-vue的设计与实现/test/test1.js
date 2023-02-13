@@ -72,7 +72,7 @@ myVue.effect(() => {
 //     myVue.jobPlan.flushJob()
 //   }
 // })
-// 测试 for in 
+// 测试 for in
 // myVue.effect(() => {
 //   for (let k in reactiveData.obj2) {
 //     console.log('测试 for in ==>',k,reactiveData.obj2[k])
@@ -114,9 +114,9 @@ myVue.effect(() => {
 // 测试 map
 // myVue.effect(() => myVue.log('测试 map',reactiveData.map1.get('a')))
 
-myVue.effect(() => {
-  reactiveData.map1.forEach((v,k,m) => myVue.log('测试 map',k,v,v.c))
-})
+// myVue.effect(() => {
+//   reactiveData.map1.forEach((v,k,m) => myVue.log('测试 map',k,v,v.c))
+// })
 
 
 //#endregion

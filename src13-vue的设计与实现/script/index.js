@@ -1,5 +1,7 @@
 //#region vue 渲染器  
 
+
+
 const template = `
 <div id="app">
   <span class="foo" :id="123" style="color:red">999</span>
@@ -54,7 +56,7 @@ class MyVue {
 
   //#region 重写 array,set,map 部分方法
 
-  // 创建原型属性,ArrayInstrmentations 重写部分数组方法
+  // 数组方法
   ArrayInstrmentations = ((arrMethods,_this) => {
     const group1 = ['indexOf','lastIndexOf'] //index相关
     const group2 = ['includes']         //
@@ -82,48 +84,65 @@ class MyVue {
   }
 
   )(['includes','indexOf','lastIndexOf','push','pop','shift','unshift','splice'],this)
-  // 重写 Set和Map 部分方法
+  // Set和Map方法
   MutableInstrumentations = ((methods,_this) => {
     const { ITERATE_KEY_SET_MAP,RAW_KEY,TRIGGER_TYPE: { ADD,SET } } = _this
+
     return methods.reduce((res,method) => {
       res[method] = function (...args) {
         let val,k = args[0],newVal = args[1],t = this[RAW_KEY],hasKey = t.has(k)
-        if (method === 'get') {
-          if (hasKey) {
-            _this._track(t,k)
-            val = t.get(k)
-            typeof val === 'object' && (val = _this.reactive(val))
-          }
-        } else if (method === 'set') {
-          const oldVal = t.get(k)
-          // 避免污染源数据，源数据 target 上不能是响应式数据，所以:newVal[_this.RAW_KEY] || newVal 
-          if (hasKey) {
-            if (oldVal !== newVal && newVal === newVal) {
+        switch (method) {
+          case 'get':
+            if (hasKey) {
+              _this._track(t,k)
+              val = _this.wrap(t.get(k))
+            }
+            break;
+          case 'set':
+            const oldVal = t.get(k)
+            // 避免污染源数据，源数据 target 上不能是响应式数据，所以:newVal[_this.RAW_KEY] || newVal 
+            if (hasKey) {
+              if (oldVal !== newVal && newVal === newVal) {
+                val = t.set(k,newVal[RAW_KEY] || newVal)
+                _this._trigger(t,k,{ newVal,type: SET })
+                _this._trigger(t,ITERATE_KEY_SET_MAP,{ newVal,type: ADD })
+              }
+            } else {
               val = t.set(k,newVal[RAW_KEY] || newVal)
-              _this._trigger(t,k,{ newVal,type: SET })
               _this._trigger(t,ITERATE_KEY_SET_MAP,{ newVal,type: ADD })
             }
-          } else {
-            val = t.set(k,newVal[RAW_KEY] || newVal)
-            _this._trigger(t,ITERATE_KEY_SET_MAP,{ newVal,type: ADD })
-          }
-        } else if (method === 'forEach') {
-          const cb = args[0]
-          val = t[method](...args)
-          t.forEach((v,...args) => {
-            cb(typeof v === 'object' ? _this.reactive(v) : v,...args)
-          })
-          _this._track(t,ITERATE_KEY_SET_MAP)
-        } else {
-          val = t[method](...args)  // t 会指向set本身，非代理
-          _this._trigger(t,ITERATE_KEY_SET_MAP)
+            break;
+          case 'forEach':
+            const cb = args[0]
+            val = t[method](...args)
+            t.forEach((v,...args) => cb(_this.wrap(v),...args))
+            _this._track(t,ITERATE_KEY_SET_MAP)
+            break;
+          case Symbol.iterator: // 可迭代协议：对象实现了 Symbol.iterator 方法
+            const itr = t[method]() //map的原始迭代器
+            _this._track(t,ITERATE_KEY_SET_MAP)
+            val = {  // 新的迭代器
+              next() {  // 迭代器协议：对象中实现了next方法
+                const { value,done } = itr.next()
+                return { value: value?.map(v => _this.wrap(v)),done }
+              },
+              [Symbol.iterator]: this
+            }
+            break;
+
+          default:
+            val = t[method](...args)  // t 会指向set本身，非代理
+            _this._trigger(t,ITERATE_KEY_SET_MAP)
+            break;
         }
+
+
         return val
       }
 
       return res
     },{})
-  })(['add','clear','delete','get','set','forEach'],this)
+  })(['add','clear','delete','get','set','forEach',Symbol.iterator],this)
 
   //#endregion
 
@@ -178,17 +197,60 @@ class MyVue {
     }
     this.renderer(subTree,container)
   }
-  //#endregion 
+  //#endregion
 
   //#region 响应式
+  // 给wrapper 上添加属性_v_isRef用来标识一个ref
+  _set_v_isRef_key(wrapper) {
+    Object.defineProperty(wrapper,'_v_isRef',{ value: true,})
+  }
+  // 对原始值包裹成 对象，然后reactive响应式化
+  ref(value) {
+    const wrapper = { value }
+    this._set_v_isRef_key(wrapper)
+    return this.reactive(wrapper)
+  }
+  // 使响应式对象可以结构，不丢失响应式的特性
+  toRef(obj,key) {
+    const wrapper = {
+      get value() { return obj[key] },
+      set value(val) { obj[key] = val; return true }
+    }
+    this._set_v_isRef_key(wrapper)
+    return wrapper
+  }
+  // 使 响应式对象可以解构，不丢失响应式的特性
+
+  toRefs(obj) {
+    const wrapper = {}
+    for (let k in obj) wrapper[k] = this.toRef(obj,k)
+    return wrapper
+  }
+  // 脱ref,可 代理refs处理后的对象，可直接使用，不需要通过.value 来访问
+  // vue中模板可以直接访问ref而不需用value就是这个原因
+  proxyRefs(target) {
+    return new Proxy(target,{
+      get(t,k) {
+        const val = Reflect.get(t,k)
+        // if (k === 'c') debugger
+        return val?._v_isRef ? val.value : val
+      },
+      set(t,k,newVal,r) {
+        const val = t[k]
+        return val?._v_isRef ? (val.value = newVal,true)
+          : Reflect.set(t,k,newVal,r)
+
+      }
+    })
+  }
+  /**对结果响应式包装 */
+  wrap = (val,options) => !options.isShallow && typeof val === 'object' && val !== null ? this.reactive(val,options) : val
   /** 微任务 */
   jobPlan = {
     jobQueue: new Set(),  // 任务队列,set去重，相同任务执行一次
     p: Promise.resolve(), //创建promise实例，将job添加到微任务队列
     isFlushing: false,  //队列刷新状态
-    /**
-     * 该功能实现 连续多次修改响应式数据但只会触发一次更新（vue）
-     */
+    // 该功能实现 连续多次修改响应式数据但只会触发一次更新
     flushJob() {
       if (this.isFlushing) return
       this.isFlushing = true
@@ -271,21 +333,20 @@ class MyVue {
     })
   }
   /**
-   * @typedef {{isShallow?: boolean,isReadonly?:boolean}} reactiveOptions
-   */
-  /**
+   * @typedef reactiveOptions
+   * @property {boolean} isShallow 深度响应 
+   * @property {boolean} isReadonly 只读属性
    * @param  data 需要代理的原始数据
    * @param {reactiveOptions} options 
-   * isShallow:深度响应 
-   * isReadonly: 只读属性
    */
-  reactive(data,options = { isShallow: false }) {
+  reactive(data,options = {}) {
+
     // 检查 data 是否已有代理，若有直接返回
     const existentProxy = this.reactiveMap.get(data)
     if (existentProxy) return existentProxy
     const _this = this
     const { TRIGGER_TYPE: { ADD,DELETE,SET } } = _this
-    const { isShallow,isReadonly } = options
+    const { isReadonly } = options
     const isArrayMethod = (key) => key !== 'length' && Array.prototype.hasOwnProperty(key)
 
     const proxy = new Proxy(data,{
@@ -307,6 +368,8 @@ class MyVue {
         }
         // 添加副作用
         // 代理部分数组方法 
+        // console.log(key)
+
         if (isArr && _this.ArrayInstrmentations.hasOwnProperty(key)) {
           res = Reflect.get(_this.ArrayInstrmentations,key,r)
         } else if (target instanceof Set || target instanceof Map) {
@@ -322,10 +385,8 @@ class MyVue {
         // 若 res 是函数须绑定this 到 Set 自身,Set的方法才能调用
         // typeof res === 'function' && (res = res.bind(target))
 
-
         // 判断 res 类型，实现深度响应
-        return !isShallow && typeof res === 'object' && res !== null
-          ? _this.reactive(res,options) : res
+        return _this.wrap(res,options)
       },
       // 拦截设置操作
       set(target,key,newVal,r) {
@@ -371,7 +432,7 @@ class MyVue {
 
     })
     this.reactiveMap.set(data,proxy)
-    return proxy
+    return _this.proxyRefs(proxy)
   }
   // 浅响应
   shallowReactive(data,options) {
