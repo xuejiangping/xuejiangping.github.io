@@ -1,3 +1,8 @@
+/**
+ * serveWokr 服务，需要在安全的https 环境下使用
+ * navigator.serviceWorker 下
+ */
+
 // const CACHE_NAME = `temperature-converter-v1`;
 
 // // Use the install event to pre-cache all initial resources.

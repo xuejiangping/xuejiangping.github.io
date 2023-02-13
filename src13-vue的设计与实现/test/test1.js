@@ -6,7 +6,8 @@ const rawData = {
   obj3: { a: 1,b: 2,c: { d: 3 } },
   obj4: { e: { f: 'f' } },
   arr1: [{ a: 1 },2,3],
-  set1: new Set([1,2])
+  set1: new Set([1,2]),
+  map1: new Map([['a',1],['b',{ c: 3 }]])
 }
 //#endregion
 
@@ -14,6 +15,7 @@ const rawData = {
 /**
  * @typedef {object} reactiveData
  * @property {Set<number>} set1
+ * @property {Map} map1
  */
 /**@type {reactiveData} */
 const reactiveData = {
@@ -22,7 +24,8 @@ const reactiveData = {
   obj3: myVue.reactive(rawData.obj3,{ isReadonly: true }),
   obj4: myVue.shallowReactive(rawData.obj4,{ isReadonly: true }),
   arr1: myVue.reactive(rawData.arr1),
-  set1: myVue.reactive(rawData.set1)
+  set1: myVue.reactive(rawData.set1),
+  map1: myVue.reactive(rawData.map1)
 }
 
 //#endregion
@@ -62,13 +65,13 @@ const App = () => h('div',{ id: 'app' },[
 myVue.effect(() => {
   myVue.renderer(App,document.body)
 })
-// 测试 副作用函数fn放入微队列,多次修改响应式数据，只执行最终结果
-myVue.effect(() => reactiveData.obj2.n,{
-  sheduler(fn) {
-    myVue.jobPlan.jobQueue.add(fn)
-    myVue.jobPlan.flushJob()
-  }
-})
+// 测试 副作用函数fn放入微队列,多次修改响应式数据，放入微队列，只执行最终结果
+// myVue.effect(() => reactiveData.obj2.n,{
+//   sheduler(fn) {
+//     myVue.jobPlan.jobQueue.add(fn)
+//     myVue.jobPlan.flushJob()
+//   }
+// })
 // 测试 for in 
 // myVue.effect(() => {
 //   for (let k in reactiveData.obj2) {
@@ -78,25 +81,25 @@ myVue.effect(() => reactiveData.obj2.n,{
 // delete reactiveData.obj2.n
 
 // 测试 避免因原型引起的不必要的更新
-Object.setPrototypeOf(rawData.obj1,rawData.obj2)
-myVue.effect(() => myVue.log('避免因原型引起的不必要的更新',reactiveData.obj1.o))
+// Object.setPrototypeOf(rawData.obj1,rawData.obj2)
+// myVue.effect(() => myVue.log('避免因原型引起的不必要的更新',reactiveData.obj1.o))
 
 // 测试 深响应
-myVue.effect(() => {
-  myVue.log('深响应',reactiveData.obj3.c.d)
-})
+// myVue.effect(() => {
+//   myVue.log('深响应',reactiveData.obj3.c.d)
+// })
 // reactiveData.obj3.c.d = 4
 
 //测试 浅响应
-myVue.effect(() => {
-  myVue.log('浅响应',reactiveData.obj4.e.f)
-})
+// myVue.effect(() => {
+//   myVue.log('浅响应',reactiveData.obj4.e.f)
+// })
 // reactiveData.obj3.e = { f: '88' }
 //测试 数组
-myVue.effect(() => myVue.log('测试 数组',reactiveData.arr1[2]))
+// myVue.effect(() => myVue.log('测试 数组',reactiveData.arr1[2]))
 // reactiveData.arr1[2] = 3
 
-myVue.effect(() => reactiveData.arr1.forEach(v => myVue.log('数组循环',v)))
+// myVue.effect(() => reactiveData.arr1.forEach(v => myVue.log('数组循环',v)))
 
 // myVue.effect(() => {
 //   for (let v of reactiveData.arr1) {
@@ -106,7 +109,14 @@ myVue.effect(() => reactiveData.arr1.forEach(v => myVue.log('数组循环',v)))
 // })
 
 // 测试 set 集合
-myVue.effect(() => myVue.log('测试 set 集合',reactiveData.set1.size))
+// myVue.effect(() => myVue.log('测试 set 集合',reactiveData.set1.size))
+
+// 测试 map
+// myVue.effect(() => myVue.log('测试 map',reactiveData.map1.get('a')))
+
+myVue.effect(() => {
+  reactiveData.map1.forEach((v,k,m) => myVue.log('测试 map',k,v,v.c))
+})
 
 
 //#endregion

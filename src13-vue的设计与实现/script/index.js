@@ -41,8 +41,9 @@ class MyVue {
   activeEffect = null //当前副作用函数
   activeEffectStack = [] // 活跃的副作用函数的栈，当嵌套effect调用时会存在多个activeEffect
   ITERATE = Symbol('ITERATE')     // for in 用于追踪的key
-  ITERATE_KEY_SET = Symbol('ITERATE_KEY_SET')  // 追踪 set集合中 size变化
-  TriggerType = { SET: 'SET',ADD: 'ADD',DELETE: 'DELETE' }  // 触发set 的类型 
+  ITERATE_KEY_SET_MAP = Symbol('ITERATE_KEY_SET_MAP')  // 追踪 set集合中 size变化
+  RAW_KEY = Symbol('RAW_KEY')
+  TRIGGER_TYPE = { SET: 'SET',ADD: 'ADD',DELETE: 'DELETE' }  // 触发set 的类型 
   reactiveMap = new Map()    // 存储 原始数据到代理数据的映射
   _shouldTrack = true   //代表是否运行 track ()追踪
   log(label,...res) {
@@ -51,47 +52,81 @@ class MyVue {
   }
 
 
-
+  //#region 重写 array,set,map 部分方法
 
   // 创建原型属性,ArrayInstrmentations 重写部分数组方法
   ArrayInstrmentations = ((arrMethods,_this) => {
     const group1 = ['indexOf','lastIndexOf'] //index相关
     const group2 = ['includes']         //
     const group3 = ['push','pop','shift','unshift','splice']  //和数组length 相关
-    const match = (group,v) => group.includes(v)
-    return arrMethods.reduce((t,v) => {
-      const originMethod = Array.prototype[v]
-      t[v] = function (...args) {  // this 指向代理的数组
-        let res
-        if (match(group1,v)) {
-          res = originMethod.apply(this,args)
-          res < 0 && (res = originMethod.apply(this.raw,args))
-        } else if (match(group2,v)) {
-          res = originMethod.apply(this,args)
-          res === false && (res = originMethod.apply(this.raw,args))
-        } else if (match(group3,v)) {
-          _this._shouldTrack = false
-          res = originMethod.apply(this,args)
-          _this._shouldTrack = true
+    const match = (group,method) => group.includes(method)
+    const { RAW_KEY,_shouldTrack } = _this
+    return arrMethods.reduce((res,method) => {
+      res[method] = function (...args) {  // this 指向原始数据
+        let val,originMethod = Array.prototype[method],t = this[RAW_KEY]
+        if (match(group1,method)) {
+          val = originMethod.apply(this,args)
+          val < 0 && (val = originMethod.apply(t,args))
+        } else if (match(group2,method)) {
+          val = originMethod.apply(this,args)
+          val === false && (val = originMethod.apply(t,args))
+        } else if (match(group3,method)) {
+          _shouldTrack = false
+          val = originMethod.apply(t,args)
+          _shouldTrack = true
         }
-        return res
+        return val
       }
-      return t
+      return res
     },{})
   }
 
   )(['includes','indexOf','lastIndexOf','push','pop','shift','unshift','splice'],this)
-  // 重写 Set 部分方法
-  SetInstrumentations = ((setMethods,_this) => {
-    return setMethods.reduce((t,v) => {
-      t[v] = function (...args) {
-        let res = this[v](...args)  // this 会指向set本身，非代理
-        _this._trigger(this,_this.ITERATE_KEY_SET)
-        return res
+  // 重写 Set和Map 部分方法
+  MutableInstrumentations = ((methods,_this) => {
+    const { ITERATE_KEY_SET_MAP,RAW_KEY,TRIGGER_TYPE: { ADD,SET } } = _this
+    return methods.reduce((res,method) => {
+      res[method] = function (...args) {
+        let val,k = args[0],newVal = args[1],t = this[RAW_KEY],hasKey = t.has(k)
+        if (method === 'get') {
+          if (hasKey) {
+            _this._track(t,k)
+            val = t.get(k)
+            typeof val === 'object' && (val = _this.reactive(val))
+          }
+        } else if (method === 'set') {
+          const oldVal = t.get(k)
+          // 避免污染源数据，源数据 target 上不能是响应式数据，所以:newVal[_this.RAW_KEY] || newVal 
+          if (hasKey) {
+            if (oldVal !== newVal && newVal === newVal) {
+              val = t.set(k,newVal[RAW_KEY] || newVal)
+              _this._trigger(t,k,{ newVal,type: SET })
+              _this._trigger(t,ITERATE_KEY_SET_MAP,{ newVal,type: ADD })
+            }
+          } else {
+            val = t.set(k,newVal[RAW_KEY] || newVal)
+            _this._trigger(t,ITERATE_KEY_SET_MAP,{ newVal,type: ADD })
+          }
+        } else if (method === 'forEach') {
+          const cb = args[0]
+          val = t[method](...args)
+          t.forEach((v,...args) => {
+            cb(typeof v === 'object' ? _this.reactive(v) : v,...args)
+          })
+          _this._track(t,ITERATE_KEY_SET_MAP)
+        } else {
+          val = t[method](...args)  // t 会指向set本身，非代理
+          _this._trigger(t,ITERATE_KEY_SET_MAP)
+        }
+        return val
       }
-      return t
+
+      return res
     },{})
-  })(['add','clear','delete'],this)
+  })(['add','clear','delete','get','set','forEach'],this)
+
+  //#endregion
+
   //#region 渲染器
   /**
    * 渲染器
@@ -168,10 +203,8 @@ class MyVue {
    * @param {{lazy:boolean,dirty:boolean,sheduler:function}} options 配置项，如：调度器
    */
   effect(fn,options = {}) {
-    /**
-     * 清除副作用函数的依赖项
-     * @param {effectFn} effectFn 
-     */
+
+    //清除副作用函数的依赖项
     const cleanup = (effectFn) => {
       effectFn.deps.forEach(item => item.delete(effectFn))
       effectFn.deps.length = 0
@@ -180,7 +213,7 @@ class MyVue {
     const effectFn = () => {
       cleanup(effectFn)
       this.activeEffect = effectFn
-      this.activeEffectStack.push(effectFn)
+      this.activeEffectStack.push(effectFn)  //若发生effect 嵌套，activeEffectStack栈可实现回溯
       const res = fn()
       this.activeEffectStack.pop()
       this.activeEffect = this.activeEffectStack[this.activeEffectStack.length - 1]
@@ -223,10 +256,10 @@ class MyVue {
       if (key === 'length') {
         // 数组修改length 会影响 数组中index大于等于newVal的元素
         depsMap.forEach((effects,k) => newVal <= k && effects.forEach(cb))
-      } else if (Number.isInteger(+key) && type === this.TriggerType.ADD) {
+      } else if (Number.isInteger(+key) && type === this.TRIGGER_TYPE.ADD) {
         depsMap.get('length')?.forEach(cb)
       }
-    } else if (type === this.TriggerType.ADD || type === this.TriggerType.DELETE) {
+    } else if (type === this.TRIGGER_TYPE.ADD || type === this.TRIGGER_TYPE.DELETE) {
       depsMap.get(this.ITERATE)?.forEach(cb) //与ITERATE相关的副作用函数
     }
 
@@ -251,7 +284,7 @@ class MyVue {
     const existentProxy = this.reactiveMap.get(data)
     if (existentProxy) return existentProxy
     const _this = this
-    const { TriggerType: { ADD,DELETE,SET } } = _this
+    const { TRIGGER_TYPE: { ADD,DELETE,SET } } = _this
     const { isShallow,isReadonly } = options
     const isArrayMethod = (key) => key !== 'length' && Array.prototype.hasOwnProperty(key)
 
@@ -259,35 +292,35 @@ class MyVue {
 
       // 拦截读取操作
       get(target,key,r) {
-        if (key === 'raw') return target
+        if (key === _this.RAW_KEY) return target
         const isArr = Array.isArray(target)
+        let res
         // 判断需要追踪的 情况
         if (!isReadonly && typeof key !== 'symbol') {
           if (isArr) {
             !isArrayMethod && _this._track(target,key)
           } else if (target instanceof Set) {
-            key === 'size' && _this._track(target,_this.ITERATE_KEY_SET)
+            key === 'size' && _this._track(target,_this.ITERATE_KEY_SET_MAP)
           } else {
             _this._track(target,key)
           }
         }
         // 添加副作用
-        let res
         // 代理部分数组方法 
         if (isArr && _this.ArrayInstrmentations.hasOwnProperty(key)) {
           res = Reflect.get(_this.ArrayInstrmentations,key,r)
-        } else if (target instanceof Set) {
+        } else if (target instanceof Set || target instanceof Map) {
           // 代理部分Set 方法
-          if (_this.SetInstrumentations.hasOwnProperty(key)) {
-            res = Reflect.get(_this.SetInstrumentations,key)
+          if (_this.MutableInstrumentations.hasOwnProperty(key)) {
+            res = Reflect.get(_this.MutableInstrumentations,key)
           } else {
             res = Reflect.get(target,key,target)
           }
-          // 若 res 是函数须绑定this 到 Set 自身,Set的方法才能调用
-          typeof res === 'function' && (res = res.bind(target))
         } else {
           res = Reflect.get(target,key,r)
         }
+        // 若 res 是函数须绑定this 到 Set 自身,Set的方法才能调用
+        // typeof res === 'function' && (res = res.bind(target))
 
 
         // 判断 res 类型，实现深度响应
@@ -308,7 +341,7 @@ class MyVue {
         // 设置属性值
         const res = Reflect.set(target,key,newVal)
         // 为真时，才执行 triggle，屏蔽由原型引起的更新，避免不必要的更新操作。
-        if (r.raw === target) {
+        if (r[_this.RAW_KEY] === target) {
           // 确保 新值!==旧值 且不能同为NAN
           if (oldVal !== newVal && oldVal === oldVal) {
             const params = { oldVal,newVal,type }
