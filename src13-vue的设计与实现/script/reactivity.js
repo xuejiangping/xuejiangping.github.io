@@ -1,33 +1,4 @@
-//#region vue 渲染器  
 
-
-
-const template = `
-<div id="app">
-  <span class="foo" :id="123" style="color:red">999</span>
-</div>
-`
-const ComponentA = {
-  render() {
-    return h('h1',{ onClick: (e) => console.log(e) },'我是ComponentA')
-  }
-}
-const ComponentB = function () {
-  return h('h1',null,'我是ComponentB')
-}
-
-/**
-* 生成vNode函数 
-*/
-function h(tag,props,children) {
-  return {
-    tag,props,children
-  }
-}
-
-
-
-//#endregion
 
 
 
@@ -37,7 +8,7 @@ function h(tag,props,children) {
  * 实现Vue
  * @class 
  */
-class MyVue {
+class Reactivity {
   /**@type { WeakMap < object,Map < string | symbol,Set < function>>>} */
   bucket = new WeakMap() // 存储副作用的桶
   activeEffect = null //当前副作用函数
@@ -221,24 +192,27 @@ class MyVue {
   }
   // 使 响应式对象可以解构，不丢失响应式的特性
 
-  toRefs(obj) {
+  toRefs(obj,deep) {
     const wrapper = {}
+
     for (let k in obj) wrapper[k] = this.toRef(obj,k)
     return wrapper
   }
   // 脱ref,可 代理refs处理后的对象，可直接使用，不需要通过.value 来访问
   // vue中模板可以直接访问ref而不需用value就是这个原因
   proxyRefs(target) {
+    // const _this=this
     return new Proxy(target,{
       get(t,k) {
         const val = Reflect.get(t,k)
         // if (k === 'c') debugger
         return val?._v_isRef ? val.value : val
+
       },
       set(t,k,newVal,r) {
         const val = t[k]
         return val?._v_isRef ? (val.value = newVal,true)
-          : Reflect.set(t,k,newVal,r)
+          : Reflect.set(t,k,newVal)
 
       }
     })
@@ -345,7 +319,7 @@ class MyVue {
     const existentProxy = this.reactiveMap.get(data)
     if (existentProxy) return existentProxy
     const _this = this
-    const { TRIGGER_TYPE: { ADD,DELETE,SET } } = _this
+    const { RAW_KEY,ITERATE_KEY_SET_MAP,TRIGGER_TYPE: { ADD,DELETE,SET } } = _this
     const { isReadonly } = options
     const isArrayMethod = (key) => key !== 'length' && Array.prototype.hasOwnProperty(key)
 
@@ -353,7 +327,7 @@ class MyVue {
 
       // 拦截读取操作
       get(target,key,r) {
-        if (key === _this.RAW_KEY) return target
+        if (key === RAW_KEY) return target
         const isArr = Array.isArray(target)
         let res
         // 判断需要追踪的 情况
@@ -361,7 +335,7 @@ class MyVue {
           if (isArr) {
             !isArrayMethod && _this._track(target,key)
           } else if (target instanceof Set) {
-            key === 'size' && _this._track(target,_this.ITERATE_KEY_SET_MAP)
+            key === 'size' && _this._track(target,ITERATE_KEY_SET_MAP)
           } else {
             _this._track(target,key)
           }
@@ -402,7 +376,7 @@ class MyVue {
         // 设置属性值
         const res = Reflect.set(target,key,newVal)
         // 为真时，才执行 triggle，屏蔽由原型引起的更新，避免不必要的更新操作。
-        if (r[_this.RAW_KEY] === target) {
+        if (r[RAW_KEY] === target) {
           // 确保 新值!==旧值 且不能同为NAN
           if (oldVal !== newVal && oldVal === oldVal) {
             const params = { oldVal,newVal,type }
