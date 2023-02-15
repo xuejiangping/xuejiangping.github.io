@@ -1,5 +1,6 @@
 import Reactivity from '../script/reactivity.js'
 import Renderer from '../script/renderer.js'
+alert(1122)
 // const reactivity = new Reactivity()
 
 // //#region 原始数据
