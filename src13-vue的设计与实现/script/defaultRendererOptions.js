@@ -37,6 +37,7 @@ export default {
       else el[k] = nextVal
     } else {
       el.setAttribute(k,nextVal)
+      console.log(123)
     }
 
   }
