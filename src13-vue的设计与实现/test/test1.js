@@ -1,6 +1,5 @@
 import Reactivity from '../script/reactivity.js'
 import Renderer from '../script/renderer.js'
-alert('尼玛')
 // const reactivity = new Reactivity()
 
 // //#region 原始数据
@@ -141,9 +140,13 @@ const a = R.ref(1)
 // document.onclick = () => a.value++
 R.effect(() => {
   const { h } = renderer
-  const vNode = h('h1',[h('h3',{ style: 'color:red',onClick: console.log },'你好'),
+  const vNode = h('h1',[h('h3',{ style: 'color:red',
+  onClick:()=> console.log('click 事件'),
+  onContextmenu:()=>console.log('Contextmenu 事件')
+
+},'你好'),
   h('h5',{ class: renderer.normalizeClass(['test_1',{ test_2: true }]) },'世界' + a.value),
     // h('input',{ form: 'form1' })
   ])
-  renderer.render(vNode,document.body)
+  renderer.render(vNode,document.querySelector('#app'))
 })
