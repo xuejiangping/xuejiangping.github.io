@@ -1,3 +1,5 @@
+import Reactivity from '../script/reactivity.js'
+import Renderer from '../script/renderer.js'
 // const reactivity = new Reactivity()
 
 // //#region 原始数据
@@ -121,6 +123,8 @@
 
 
 // //#endregion
+
+
 const R = new Reactivity()
 const renderer = new Renderer()
 
@@ -134,3 +138,11 @@ const a = R.ref(1)
 // R.effect(() => console.log(a.value))
 
 // document.onclick = () => a.value++
+R.effect(() => {
+  const { h } = renderer
+  const vNode = h('h1',[h('h3',{ style: 'color:red',onClick: console.log },'你好'),
+  h('h5',{ class: renderer.normalizeClass(['test_1',{ test_2: true }]) },'世界' + a.value),
+    // h('input',{ form: 'form1' })
+  ])
+  renderer.render(vNode,document.body)
+})

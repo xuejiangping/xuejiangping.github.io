@@ -1,12 +1,6 @@
 
-
-
-
-
-
 /**
- * 实现Vue
- * @class 
+ * 实现 响应式
  */
 class Reactivity {
   /**@type { WeakMap < object,Map < string | symbol,Set < function>>>} */
@@ -476,3 +470,4 @@ class Reactivity {
 
 }
 
+export default Reactivity
