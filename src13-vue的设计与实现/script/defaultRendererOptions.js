@@ -27,6 +27,7 @@ export default {
       let invoker=invokers[k]
       const name = k.slice(2).toLowerCase()
       if(nextVal){ 
+        console.log(1)
         if (invoker) {
           invoker.value = nextVal
         } else {
