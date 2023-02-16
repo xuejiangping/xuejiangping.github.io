@@ -23,15 +23,22 @@ export default {
     if (k === 'class') {
       el.className = nextVal || ''
     } else if (/^on/.test(k)) {
-      let invoker = el._vei //通过invoker 来模拟事件添加和移除
+      let invokers = el._vei||(el._vei={}) //通过invoker 来模拟事件添加和移除,可以缓存事件提高性能
+      let invoker=invokers[k]
       const name = k.slice(2).toLowerCase()
-      if (invoker) {
-        invoker.value = nextVal
-      } else {
-        invoker = el._evi = e => invoker.value(e)
-        invoker.value = nextVal
-        el.addEventListener(name,invoker)
+      if(nextVal){ 
+        console.log(1)
+        if (invoker) {
+          invoker.value = nextVal
+        } else {
+          invoker = el._vei[k] = e => invoker.value(e)
+          invoker.value = nextVal
+          el.addEventListener(name,invoker)
+        }
+      }else if(invoker){
+        el.removeEventListener(name,invoker)
       }
+      
     } else if (_shouldSetAsProps(el,k)) {
       if (typeof el[k] === 'boolean' && nextVal === '') el[k] = true
       else el[k] = nextVal
