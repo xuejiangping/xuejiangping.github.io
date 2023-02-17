@@ -2,7 +2,10 @@
 
 export default {
   createElement: (tag) => document.createElement(tag),
-  setElementText: (el,text = '') => el.textContent = text,
+  createText: (text) => new Text(text),
+  setText: (textNode,text = '') => { textNode.nodeValue = text; alert(123) },
+  createComment: (text) => new Comment(text),
+  setComment: (commentNode,text) => commentNode.nodeValue = text,
   insert: (el,parent,anchor = null) => parent.insertBefore(el,anchor),
   removeElement(vNode) {
     const el = vNode.el,parent = el?.parentElement
@@ -11,8 +14,6 @@ export default {
   /**
    * @param {string} k 
    * @param {HTMLElement} el
-   * 
-   * 
   */
   patchProps(el,k,preVal,nextVal) {
     /* HTML Attributes 指的是定义在HTML标签上的属性，如：id="app"
@@ -31,8 +32,8 @@ export default {
     if (k === 'class') {
       el.className = nextVal || ''
     } else if (/^on/.test(k)) {
-      let invokers = el._vei || (el._vei = {}) //通过invoker 来模拟事件添加和移除,可以缓存事件提高性能
-      let invoker = invokers[k]
+      let invokers = el._vei || (el._vei = {}) // 命名说明：vei (virtual-event-invoker)
+      let invoker = invokers[k] //通过invoker 来模拟事件添加和移除,可以缓存事件提高性能
       const name = k.slice(2).toLowerCase()
       if (nextVal) {
         if (invoker) {

@@ -19,6 +19,12 @@ class Renderer {
   constructor(options = defaultRendererOptions) {
     this.rendererOptions = options
   }
+  /**@enum */
+  TYPES = {
+    Text: Symbol('Text'),
+    Comment: Symbol('Comment'),
+    Fragment: Symbol('Fragment')
+  }
   // 辅助生成vNode 的函数
   h(type,...args) {
     const [a,b] = args
@@ -33,22 +39,22 @@ class Renderer {
    */
   mountElement(vNode,container) {
     const { type,props,children } = vNode
-    const { createElement,setElementText,insert,patchProps } = this.rendererOptions
+    const { createElement,insert,patchProps,createText } = this.rendererOptions
     const el = vNode.el = createElement(type)
+    el._vNode = vNode
+
     if (props) { //为元素设置属性
       for (const k in props) {
         patchProps(el,k,null,props[k])
       }
     }
     if (typeof children === 'string') {
-      setElementText(el,children)
-    } else if (Array.isArray(children)) {
-      children.forEach(c => this.patch(null,c,el))
+      insert(createText(children),el)
     }
+    Array.isArray(children) && children.forEach(c => this.patch(null,c,el))
     insert(el,container)
   }
   /**
-   * 
    * @param {VNODE} n1 
    * @param {VNODE} n2 
    */
@@ -78,21 +84,23 @@ class Renderer {
   * @param {HTMLElement} container
   */
   patchChildren(n1,n2,container) {
-    console.log(n1,n2)
-    const { setElementText } = this.rendererOptions
-    if (typeof n2.children === 'string') {
-      setElementText(container,n2.children)
+    // console.log(n1,n2)
+    const { setText } = this.rendererOptions
+    if (typeof n2.children === 'string') { // 新子节点是 文本
+      setText(container,n2.children)
       Array.isArray(n1.children) && n1.children.forEach(c => this.unmount(c))
-    } else if (Array.isArray(n2.children)) {
-      if (Array.isArray(n1.children)) {
-        // 这里说明 新旧节点都是一组子节点 ，需要Diff算法比较子节点的变化 。。。
+    } else if (Array.isArray(n2.children)) { //新子节点是一组子节点
+      if (Array.isArray(n1.children)) { //新旧节点都是一组子节点，diff 比较
         console.log('Diff')
         n1.children.forEach(c => this.unmount(c))
         n2.children.forEach(c => this.patch(null,c,container))
       } else { //旧节点children是文本或者空，则清空后渲染新的子节点
-        setElementText(container)
+        setText(container)
         n2.children.forEach(c => this.patch(null,c,container))
       }
+    } else {  // 新子节点 不存在
+      if (typeof n1.children === 'string') setText(container)
+      else if (Array.isArray(n1.children)) n1.children.forEach(c => this.unmount(c))
     }
 
   }
@@ -104,18 +112,31 @@ class Renderer {
    * @param {HTMLElement} container 
    */
   patch(n1,n2,container) {
+    const { TYPES: { Text,Comment,Fragment },
+      rendererOptions: { createText,insert,createComment,setText,setComment } } = this
     if (n1 && n1.type !== n2.type) { // 如果n1 n2 存在，且type不相等，直接卸载旧的vNode，挂载新的
       this.unmount(n1); n1 = null
     }
+
     const { type } = n2
-    if (typeof type === 'string') {
+    if (typeof type === 'string') { //元素节点
       if (!n1) {  // 挂载
         this.mountElement(n2,container)
       } else { //打补丁 对比n1,n2
         // this.mountElement(n2,container)
         this.patchElement(n1,n2)
       }
-    } else if (typeof type === 'object') {// 类组件
+    } else if (type === Text) {  //文本节点
+      if (n1) setText(n1.el,n2.children)
+      else insert(createText(n2.children),container)
+    } else if (type === Comment) {  //注释节点
+      if (n1) setComment(n1.el,n2.children)
+      else insert(createComment(n2.children),container)
+    } else if (type === Fragment) { //空白文档
+      if (n1) this.patchChildren(n1,n2,container)
+      else n2.children(c => this.patch(null,c,container))
+    }
+    else if (typeof type === 'object') {// 类组件
 
     } else if (typeof type === 'function') {// 函数式组件
 
@@ -124,6 +145,9 @@ class Renderer {
   }
   // 卸载组件
   unmount(vNode) {
+    if (vNode.type === this.TYPES.Fragment) {
+      vNode.children.forEach(c => this.unmount(c))
+    }
     this.rendererOptions.removeElement(vNode)
   }
   /**
