@@ -111,58 +111,6 @@ class Reactivity {
 
   //#endregion
 
-  //#region 渲染器
-  /**
-   * 渲染器
-   * @param {vNode} vNode 
-   * @param {HTMLElement} root
-   */
-  renderer(vNode,root) {
-    if (typeof vNode === 'function') vNode = vNode()
-    const { tag } = vNode
-    if (typeof tag === 'string') {
-      this.mountElement(vNode,root)
-    } else this.mountComponent(vNode,root)
-  }
-
-
-  /**
-   * 挂载元素
-   * @param {vNode} vNode 
-   * @param {*} container 
-   */
-  mountElement(vNode,container) {
-    const { tag,children,props } = vNode
-    const el = document.createElement(tag)
-    for (const key in props) {
-      if (key.startsWith('on')) {
-        const eventName = key.substring(2).toLowerCase()
-        el.addEventListener(eventName,props[key])
-      } else el.setAttribute(key,props[key])
-    }
-    if (typeof children === 'string') {
-      el.appendChild(document.createTextNode(children))
-    } else if (Array.isArray(children)) {
-      children.forEach(child => this.renderer(child,el))
-    }
-    container.appendChild(el)
-  }
-  /**
-   * 挂载组件
-   * @param {vNode} vNode 
-   * @param {HTMLElement} container 
-   */
-  mountComponent(vNode,container) {
-    const { tag } = vNode
-    let subTree
-    if (typeof tag === 'function') { // 函数组件
-      subTree = tag()
-    } else if (typeof tag === 'object') { //类式组件
-      subTree = tag.render()
-    }
-    this.renderer(subTree,container)
-  }
-  //#endregion
 
   //#region 响应式
   // 给wrapper 上添加属性_v_isRef用来标识一个ref
@@ -170,6 +118,11 @@ class Reactivity {
     Object.defineProperty(wrapper,'_v_isRef',{ value: true,})
   }
   // 对原始值包裹成 对象，然后reactive响应式化
+  /**
+   * @template  T
+   * @param {T} value 
+   * @returns {{value:T}}
+   */
   ref(value) {
     const wrapper = { value }
     this._set_v_isRef_key(wrapper)
@@ -188,7 +141,6 @@ class Reactivity {
 
   toRefs(obj,deep) {
     const wrapper = {}
-
     for (let k in obj) wrapper[k] = this.toRef(obj,k)
     return wrapper
   }
@@ -269,7 +221,6 @@ class Reactivity {
   }
   //触发副作用
   _trigger(target,key,params = {}) {
-
     const { oldVal,newVal,type } = params
     const values = { oldVal,newVal }
     const depsMap = this.bucket.get(target)

@@ -131,22 +131,27 @@ const renderer = new Renderer()
 // Object.defineProperties(_r.__proto__,{
 //   ref: { enumerable: true },
 // })
-
+window.myVue = { R,renderer }
 const a = R.ref(1)
-
+const b = R.ref(false)
 // R.effect(() => render(`<h1>${a.value}</h1>`,document.body))
 // R.effect(() => console.log(a.value))
 
 // document.onclick = () => a.value++
 R.effect(() => {
-  const { h } = renderer
-  const vNode = h('h1',[h('h3',{ style: 'color:red',
-  onClick:()=> console.log('click 事件'),
-  onContextmenu:()=>console.log('Contextmenu 事件')
-
-},'你好'),
-  h('h5',{ class: renderer.normalizeClass(['test_1',{ test_2: true }]) },'世界' + a.value),
+  const { h,normalizeClass } = renderer
+  const vNode = h('h1',b.value && { onClick: () => console.log('父元素 clicked') },[
+    h('h3',{ style: 'color:red',class: normalizeClass(['test_1',{ test_2: true }]) },'测试class ,style等props绑定'),
+    h('h5','测试响应式值：' + a.value),
+    h('h5',{
+      onClick: [() => console.log('click 事件'),() => console.log('click-alert')],
+      onContextmenu: () => console.log('Contextmenu 事件')
+    },'测试事件绑定'),
     // h('input',{ form: 'form1' })
+    h('h5',{ onClick: () => b.value = true },b.value ? [h('h2',{ class: 'test_1' },'999')] : 'text')
   ])
   renderer.render(vNode,document.querySelector('#app'))
 })
+// a.value = 99
+// console.log('a',a)
+
