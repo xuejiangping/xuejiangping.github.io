@@ -3,9 +3,13 @@
 export default {
   createElement: (tag) => document.createElement(tag),
   createText: (text) => new Text(text),
-  setText: (textNode,text = '') => { textNode.nodeValue = text; alert(123) },
+  setText: (node,text = '') => { 
+    if(node.nodeType===Node.TEXT_NODE){
+      node.nodeValue = text
+    }else node.textContent=text
+   },
   createComment: (text) => new Comment(text),
-  setComment: (commentNode,text) => commentNode.nodeValue = text,
+  setComment: (node,text) => node.nodeValue = text,
   insert: (el,parent,anchor = null) => parent.insertBefore(el,anchor),
   removeElement(vNode) {
     const el = vNode.el,parent = el?.parentElement
