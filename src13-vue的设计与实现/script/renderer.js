@@ -104,6 +104,17 @@ class Renderer {
     }
 
   }
+/**
+  * 
+  * @param {VNODE} n1 
+  * @param {VNODE} n2 
+  * @param {HTMLElement} container
+  */
+  diff(n1,n2,container){
+    const  {children:newChildren}=n2,{children:oldChildren}=n1
+    const newLen=newChildren.length,oldLen=oldChildren.length
+    const commonLen=Math.min(newLen,oldLen)
+  }
 
   /**
    * 打补丁
