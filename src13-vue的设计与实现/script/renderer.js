@@ -114,6 +114,14 @@ class Renderer {
     const  {children:newChildren}=n2,{children:oldChildren}=n1
     const newLen=newChildren.length,oldLen=oldChildren.length
     const commonLen=Math.min(newLen,oldLen)
+    for(let i=0;i<commonLen;i++){
+      this.patch(oldChildren[i],newChildren[i])
+    }
+    if(newLen>oldLen){
+      for(let i=commonLen;i<newLen;i++) this.patch(null,newChildren[i],container)
+    }else{
+      for(let i=commonLen;i<oldLen;i++) this.unmount(oldChildren[i])
+    }
   }
 
   /**
@@ -138,11 +146,11 @@ class Renderer {
         this.patchElement(n1,n2)
       }
     } else if (type === Text) {  //文本节点
-      if (n1) setText(n1.el,n2.children)
-      else insert(createText(n2.children),container)
+      if (n1) setText(n2.el=n1.el,n2.children)
+      else insert(n2.el=createText(n2.children),container)
     } else if (type === Comment) {  //注释节点
-      if (n1) setComment(n1.el,n2.children)
-      else insert(createComment(n2.children),container)
+      if (n1) setComment(n2.el=n1.el,n2.children)
+      else insert(n2.el=createComment(n2.children),container)
     } else if (type === Fragment) { //空白文档
       if (n1) this.patchChildren(n1,n2,container)
       else n2.children(c => this.patch(null,c,container))
