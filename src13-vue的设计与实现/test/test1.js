@@ -155,23 +155,27 @@ R.effect(() => {
 })
 // a.value = 99
 // console.log('a',a)
+ const oldVNode = {
+   type: 'div',
+   children: [
+     { type: 'p', children: '1', key: 1 },
+     { type: 'p', children: '2', key: 2 },
+     { type: 'p', children: 'hello', key: 3 }
+   ]
+ }
 
-// 旧 vnode
-const oldVNode = {
-  type: 'div',
-  children: [
-    { type: 'p',children: '1' },
-    { type: 'p',children: '2' },
-    { type: 'p',children: '3' }
-  ]
-}
+ const newVNode = {
+   type: 'div',
+   children: [
+     { type: 'p', children: 'world', key: 3 },
+     { type: 'p', children: '1', key: 1 },
+     { type: 'p', children: '2', key: 2 }
+   ]
+ }
 
-// 新 vnode
-const newVNode = {
-  type: 'div',
-  children: [
-    { type: 'p',children: '4' },
-    { type: 'p',children: '5' },
-    { type: 'p',children: '6' }
-  ]
-}
+ // 首次挂载
+ renderer.render(oldVNode, document.querySelector('#app'))
+ setTimeout(() => {
+   // 1 秒钟后更新
+   renderer.render(newVNode, document.querySelector('#app'))
+ }, 1000);

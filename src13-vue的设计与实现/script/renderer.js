@@ -92,8 +92,7 @@ class Renderer {
     } else if (Array.isArray(n2.children)) { //新子节点是一组子节点
       if (Array.isArray(n1.children)) { //新旧节点都是一组子节点，diff 比较
         console.log('Diff')
-        n1.children.forEach(c => this.unmount(c))
-        n2.children.forEach(c => this.patch(null,c,container))
+       this.diff(n1,n2,container)
       } else { //旧节点children是文本或者空，则清空后渲染新的子节点
         setText(container)
         n2.children.forEach(c => this.patch(null,c,container))
