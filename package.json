@@ -3,5 +3,9 @@
     "cheerio": "^1.0.0-rc.12",
     "nodejs-websocket": "^1.7.2",
     "ws": "^8.12.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.21.0",
+    "@babel/preset-react": "^7.18.6"
   }
 }

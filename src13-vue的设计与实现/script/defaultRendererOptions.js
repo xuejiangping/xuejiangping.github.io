@@ -1,5 +1,34 @@
 // 适用于浏览器的 默认渲染配置
 
+// 序列化 class
+function normalizeClass(data) {
+  const _ = (data) => {
+    const type = typeof data
+    if (type === 'string') {
+      return data.split(' ')
+    } else if (Array.isArray(data)) {
+      return data.flatMap(v => _(v))
+    } else if (type === 'object') {
+      return Object.entries(data).reduce((t,[k,v]) => (v && t.push(k),t),[])
+    }
+  }
+  return _(data).join(' ')
+}
+// 序列化 style
+function normalizeStyle(data) {
+  const _ = (data) => {
+    const type = typeof data
+    if (type === 'string') {
+      return data.split(';')
+    } else if (Array.isArray(data)) {
+      return data.flatMap(v => _(v))
+    } else if (type === 'object') {
+      return Object.entries(data).reduce((t,[k,v]) => (t.push(`${k}:${v}`),t),[])
+    }
+  }
+  return _(data).join(';')
+}
+
 export default {
   createElement: (tag) => document.createElement(tag),
   createText: (text) => new Text(text),
@@ -14,6 +43,7 @@ export default {
     const el = vNode.el,parent = el?.parentElement
     parent?.removeChild(el)
   },
+
   /**
    * @param {string} k 
    * @param {HTMLElement} el
@@ -32,8 +62,10 @@ export default {
       if (k === 'form' && el.tagName === 'INPUT') return
       return k in el
     }
-    if (k === 'class') {
-      el.className = nextVal || ''
+    if (k === 'className') {
+      el.className = normalizeClass(nextVal) || ''
+    } else if (k === 'style') {
+      el.setAttribute(k,normalizeStyle(nextVal))
     } else if (/^on/.test(k)) {
       let invokers = el._vei || (el._vei = {}) // 命名说明：vei (virtual-event-invoker)
       let invoker = invokers[k] //通过invoker 来模拟事件添加和移除,可以缓存事件提高性能

@@ -11,9 +11,11 @@ class Renderer {
   /**
   * @typedef  VNODE
   * @property {string|HTMLElement} type
-  * @property {null|VNODE[]|string} children
+  * @property {VNODE[]|string|null} children
   * @property {HTMLElement} el
   * @property {object} props
+  * @property {number|null} key
+  * 
   */
 
   constructor(options = defaultRendererOptions) {
@@ -26,18 +28,18 @@ class Renderer {
     Fragment: Symbol('Fragment')
   }
   // 辅助生成vNode 的函数
-  h(type,...args) {
-    const [a,b] = args
-    return (Array.isArray(a) || typeof a === 'string')
-      ? { type,children: a }
-      : { type,props: a && typeof a === 'object' ? a : {},children: b }
-  }
+  h = ((key,{ TYPES }) => function (type,props,...args) {
+    const { Text } = TYPES
+    key++
+    return { key,type,props,children: args.flatMap(c => typeof c === 'string' ? { type: Text,props: null,children: c } : c) }
+
+  })(0,this)
 
   /**
    * @param {VNODE} vNode 
    * @param {HTMLElement} container 
    */
-  mountElement(vNode,container) {
+  mountElement(vNode,container,anchor) {
     const { type,props,children } = vNode
     const { createElement,insert,patchProps,createText } = this.rendererOptions
     const el = vNode.el = createElement(type)
@@ -50,9 +52,10 @@ class Renderer {
     }
     if (typeof children === 'string') {
       insert(createText(children),el)
+    } else if (Array.isArray(children)) {
+      children.forEach(c => this.patch(null,c,el))
     }
-    Array.isArray(children) && children.forEach(c => this.patch(null,c,el))
-    insert(el,container)
+    insert(el,container,anchor)
   }
 
   /**
@@ -61,17 +64,19 @@ class Renderer {
    * @param {VNODE} n2 新vNode
    * @param {HTMLElement} container 
    */
-  patch(n1,n2,container) {
-    console.log(n1,n2)
+  patch(n1,n2,container,anchor) {
+
     // if (n2 === false) debugger
     const { TYPES: { Text,Comment,Fragment },rendererOptions: { createText,insert,createComment,setText,setComment } } = this
     if (n1 && n1.type !== n2.type) { // 如果n1 n2 存在，且type不相等，直接卸载旧的vNode，挂载新的
       this.unmount(n1); n1 = null
     }
+
     const { type } = n2
+
     if (typeof type === 'string') { //元素节点
       if (!n1) {  // 挂载
-        this.mountElement(n2,container)
+        this.mountElement(n2,container,anchor)
       } else { //打补丁 对比n1,n2
         this.patchElement(n1,n2)
       }
@@ -132,8 +137,6 @@ class Renderer {
         console.log('Diff')
         //-------------------Diff-------------------
         this.diff(n1,n2,container)
-        // n1.children.forEach(c => this.unmount(c))
-        // n2.children.forEach(c => this.patch(null,c,container))
       } else { //旧节点children是文本或者空，则清空后渲染新的子节点
         setText(container)
         n2.children.forEach(c => this.patch(null,c,container))
@@ -150,22 +153,38 @@ class Renderer {
    * @param {VNODE} n2 
    */
   diff(n1,n2,container) {
-
     const { children: oldChildren } = n1,{ children: newChildren } = n2
-    const oldLen = oldChildren.length,newLen = newChildren.length
-    const commonLen = Math.min(oldLen,newLen)
-    for (let i = 0; i < commonLen; i++) {
-      this.patch(oldChildren[i],newChildren[i],container)
-    }
-    if (newLen > oldLen) {
-      for (let i = commonLen; i < newLen; i++) {
-        this.patch(null,newChildren[i],container)
+    let lastIndex = 0
+    for (let i = 0; i < newChildren.length; i++) {
+      const newVnode = newChildren[i]
+      let find = false
+      for (let j = 0; j < oldChildren.length; j++) {
+        const oldVnode = oldChildren[j]
+        if (newVnode.key === oldVnode.key) {
+          find = true  //找到相同的 key 可以复用
+          this.patch(oldVnode,newVnode,container)
+          if (j < lastIndex) { //需要调整位置
+            const prevVnode = newChildren[i - 1]
+            if (prevVnode) {
+              const anchorEl = prevVnode.el.nextSibling
+              this.rendererOptions.insert(oldVnode.el,container,anchorEl)
+            }
+          } else lastIndex = j
+          break
+        }
       }
-    } else {
-      for (let i = commonLen; i < oldLen; i++) {
-        this.unmount(oldChildren[i])
+      // 若没有找到key 说明新元素，需要挂载
+      if (!find) {
+        let anchorEl = newChildren[i - 1]?.el.nextSibling || container.firstChild
+        this.patch(null,newVnode,container,anchorEl)
       }
     }
+    // 卸载 不存在的元素
+    oldChildren.forEach(oldVnode => {
+      const has = newChildren.some(newVnode => oldVnode.key === newVnode.key)
+      if (!has) this.unmount(oldVnode)
+    })
+
 
   }
 
@@ -188,20 +207,7 @@ class Renderer {
     }
     container._vNode = vNode
   }
-  // 序列化 class
-  normalizeClass(data) {
-    const _ = (data) => {
-      const type = typeof data
-      if (type === 'string') {
-        return data.split(' ')
-      } else if (Array.isArray(data)) {
-        return data.flatMap(v => _(v))
-      } else if (type === 'object') {
-        return Object.entries(data).reduce((t,[k,v]) => (v && t.push(k),t),[])
-      }
-    }
-    return _(data).join(' ')
-  }
+
 
 }
 export default Renderer

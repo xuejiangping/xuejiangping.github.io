@@ -1,5 +1,6 @@
 import Reactivity from '../script/reactivity.js'
 import Renderer from '../script/renderer.js'
+
 // const reactivity = new Reactivity()
 
 // //#region 原始数据
@@ -134,24 +135,25 @@ const { TYPES: { Text,Comment,Fragment } } = renderer
 window.myVue = { R,renderer }
 const a = R.ref(1)
 const b = R.ref(false)
+const { h } = renderer
+
 // R.effect(() => render(`<h1>${a.value}</h1>`,document.body))
 // R.effect(() => console.log(a.value))
 
 document.onclick = () => a.value++
-R.effect(() => {
-  const { h,normalizeClass } = renderer
-  const vNode = h(Fragment,b.value && { onClick: () => console.log('父元素 clicked') },[
-    h('h3',{ style: 'color:red',class: normalizeClass(['test_1',{ test_2: true }]) },'测试class ,style等props绑定'),
-    h('h5',[h(Text,'测试响应式值：' + a.value)]),
-    h('h5',{
+() => R.effect(() => {
+  const vNode = h(Fragment,b.value && { onClick: () => console.log('父元素 clicked') },
+    h('h2',{ style: 'color:red',className: ['test_1',{ test_2: true }] },'测试className ,style等props绑定'),
+    h('h2',null,'测试响应式值：' + a.value),
+    h('h2',{
       onClick: [() => console.log('click 事件'),() => console.log('click-alert')],
       onContextmenu: () => console.log('Contextmenu 事件')
     },'测试事件绑定'),
     // h('input',{ form: 'form1' })
-    h('h5',{ onClick: () => b.value = !b.value },[h('h2',{ class: 'test_1' },b.value ? 'text1' : 'text2')]),
-    h(Comment,'测试注释节点'),
-    !b.value && h('h5',Array(5).fill().map((_,i) => h('div','测试length' + i)))
-  ])
+    h('h2',{ onClick: () => b.value = !b.value },h('h3',{ className: 'test_1' },b.value ? 'text1' : 'text2')),
+    h(Comment,null,'测试注释节点'),
+    !b.value && h('h2',null,Array(5).fill().map((_,i) => h('div',null,'测试length' + i)))
+  )
   renderer.render(vNode,document.querySelector('#app'))
 })
 // a.value = 99
@@ -172,6 +174,7 @@ const oldVNode = {
 const newVNode = {
   type: 'div',
   children: [
+    { type: 'p',children: '3',key: 4 },
     { type: 'p',children: 'world',key: 3 },
     { type: 'p',children: '1',key: 1 },
     { type: 'p',children: '2',key: 2 }
@@ -179,8 +182,24 @@ const newVNode = {
 }
 
 // 首次挂载
-// renderer.render(oldVNode,document.querySelector('#app'))
+renderer.render(oldVNode,document.querySelector('#app'))
 // setTimeout(() => {
 //   // 1 秒钟后更新
 //   renderer.render(newVNode,document.querySelector('#app'))
 // },1000);
+
+let t = <div>
+  <ul>
+    <li onClick={() => alert(122)}>demo</li>
+    <li>demo</li>
+    <li>demo</li>
+    <li>demo</li>
+    <li>demo</li>
+  </ul>
+  <h5 style={{ color: 'pink' }}>
+    <div style={'color:red'}> 密码： <input type='password' /></div>
+    <div> 账号： <input type='text' /></div>
+  </h5>
+</div>
+
+renderer.render(t,document.querySelector('#app'))
