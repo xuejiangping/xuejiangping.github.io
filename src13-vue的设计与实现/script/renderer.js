@@ -203,11 +203,11 @@ class Renderer {
     while (newStartIdx <= newEndIdx && oldStartInx <= oldEndIdx) {
       if (!oldStartVnode) {  //
         oldStartVnode = oldChildren[++oldStartInx]
-      } else if (newStartVnode.key === oldStartVnode.key) { // 比较 头部
+      } else if (newStartVnode.key === oldStartVnode.key) { // 比较 新头部<==>旧头部
         this.patch(oldStartVnode,newStartVnode,container)
         newStartVnode = newChildren[++newStartIdx]
         oldStartVnode = oldChildren[++oldStartInx]
-      } else if (newEndVnode.key === oldEndVnode.key) {  //比较 尾部
+      } else if (newEndVnode.key === oldEndVnode.key) {  //比较 新尾部<==>旧尾部
         this.patch(oldEndVnode,newEndVnode,container)
         newEndVnode = newChildren[--newEndIdx]
         oldEndVnode = oldChildren[--oldEndIdx]
@@ -229,18 +229,20 @@ class Renderer {
           this.patch(nodeToMove,newStartVnode,container)
           insert(nodeToMove.el,container,oldStartVnode.el)
           newStartVnode = newChildren[++newStartIdx]
-
         } else { //若在旧子节点中 找不到 newStartVnode相同的key ，说明需挂载为新节点
           this.patch(null,newStartVnode,container,oldStartVnode.el)
           newStartVnode = newChildren[++newStartIdx]
         }
       }
     }
-    // 循环结束 检查索引 情况
+    // 新 子节点剩余部分 需要被挂载
     if (oldEndIdx < oldStartInx && newStartIdx <= newEndIdx) {
       for (let i = newStartIdx; i <= newEndIdx; i++) {
         this.patch(null,newChildren[i],container,oldStartVnode.el)
       }
+      // 旧 子节点中多余的 需要删除
+    } else if (newEndIdx < newStartIdx && oldStartInx <= oldEndIdx) {
+      for (let i = oldStartInx; i <= oldEndIdx; i++) this.unmount(oldChildren[i])
     }
 
   }
