@@ -179,13 +179,13 @@ class Reactivity {
       }).finally(() => this.isFlushing = false)
     }
   }
+
   /**  
    * 副作用
    * @param {function} fn 副作用函数
    * @param {{lazy:boolean,dirty:boolean,sheduler:function}} options 配置项，如：调度器
    */
   effect(fn,options = {}) {
-
     //清除副作用函数的依赖项
     const cleanup = (effectFn) => {
       effectFn.deps.forEach(item => item.delete(effectFn))

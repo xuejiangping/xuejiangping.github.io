@@ -28,10 +28,9 @@ class Renderer {
     Fragment: Symbol('Fragment')
   }
   // 辅助生成vNode 的函数
-  h = ((key,{ TYPES }) => function (type,props,...args) {
-    const { Text } = TYPES
-    key++
-    return { key,type,props,children: args.flatMap(c => typeof c === 'string' ? { type: Text,props: null,children: c } : c) }
+  h = ((key,{ TYPES: { Text } }) => function (type,props,...args) {
+
+    return { key: key++,type,props,children: args.flatMap(c => typeof c === 'string' ? { type: Text,props: null,children: c } : c) }
 
   })(0,this)
 
@@ -65,7 +64,7 @@ class Renderer {
    * @param {HTMLElement} container 
    */
   patch(n1,n2,container,anchor) {
-
+    console.log(n1,n2)
     // if (n2 === false) debugger
     const { TYPES: { Text,Comment,Fragment },rendererOptions: { createText,insert,createComment,setText,setComment } } = this
     if (n1 && n1.type !== n2.type) { // 如果n1 n2 存在，且type不相等，直接卸载旧的vNode，挂载新的
@@ -87,7 +86,7 @@ class Renderer {
       if (n1) setComment(n2.el = n1.el,n2.children)
       else insert(n2.el = createComment(n2.children),container)
     } else if (type === Fragment) { //空白文档
-      if (n1) this.patchChildren(n1,n2,container)
+      if (n1) this.patchChildren(n1.children,n2.children,container)
       else n2.children.forEach(c => this.patch(null,c,container))
     }
     else if (typeof type === 'object') {// 类组件
@@ -117,7 +116,7 @@ class Renderer {
     }
     // 更新children
 
-    this.patchChildren(n1,n2,el)
+    this.patchChildren(n1.children,n2.children,el)
   }
 
   /**
@@ -126,34 +125,35 @@ class Renderer {
   * @param {VNODE} n2 
   * @param {HTMLElement} container
   */
-  patchChildren(n1,n2,container) {
+  patchChildren(oldChildren,newChildren,container) {
     const { setText } = this.rendererOptions
-    if (typeof n2.children === 'string') { // 新子节点是 文本
-      Array.isArray(n1.children) && n1.children.forEach(c => this.unmount(c))
-      setText(container,n2.children)
+    if (typeof newChildren === 'string') { // 新子节点是 文本
+      Array.isArray(oldChildren) && oldChildren.forEach(c => this.unmount(c))
+      setText(container,newChildren)
 
-    } else if (Array.isArray(n2.children)) { //新子节点是一组子节点
-      if (Array.isArray(n1.children)) { //新旧节点都是一组子节点，diff 比较
+    } else if (Array.isArray(newChildren)) { //新子节点是一组子节点
+      if (Array.isArray(oldChildren)) { //新旧节点都是一组子节点，diff 比较
         console.log('Diff')
         //-------------------Diff-------------------
-        this.diff(n1,n2,container)
+        // this.diff(oldChildren,newChildren,container)
+        this.doubleEndDiff(oldChildren,newChildren,container)
       } else { //旧节点children是文本或者空，则清空后渲染新的子节点
         setText(container)
-        n2.children.forEach(c => this.patch(null,c,container))
+        newChildren.forEach(c => this.patch(null,c,container))
       }
     } else {  // 新子节点 不存在
-      if (typeof n1.children === 'string') setText(container)
-      else if (Array.isArray(n1.children)) n1.children.forEach(c => this.unmount(c))
+      if (typeof oldChildren === 'string') setText(container)
+      else if (Array.isArray(oldChildren)) oldChildren.forEach(c => this.unmount(c))
     }
 
   }
   /**
    * 简单diff算法
-   * @param {VNODE} n1 
-   * @param {VNODE} n2 
+   * @param {VNODE[]} oldChildren 
+   * @param {VNODE[]} newChildren
    */
-  diff(n1,n2,container) {
-    const { children: oldChildren } = n1,{ children: newChildren } = n2
+  diff(oldChildren,newChildren,container) {
+    oldChildren
     let lastIndex = 0
     for (let i = 0; i < newChildren.length; i++) {
       const newVnode = newChildren[i]
@@ -185,6 +185,63 @@ class Renderer {
       if (!has) this.unmount(oldVnode)
     })
 
+
+  }
+  /**
+    * 双端 diff算法
+    * @param {VNODE[]} oldChildren 
+    * @param {VNODE[]} newChildren
+    */
+  doubleEndDiff(oldChildren,newChildren,container) {
+
+    let newStartIdx = 0,newEndIdx = newChildren.length - 1
+    let oldStartInx = 0,oldEndIdx = oldChildren.length - 1
+    let newStartVnode = newChildren[newStartIdx],newEndVnode = newChildren[newEndIdx]
+    let oldStartVnode = oldChildren[oldStartInx],oldEndVnode = oldChildren[oldEndIdx]
+    const { insert } = this.rendererOptions
+    // debugger
+    while (newStartIdx <= newEndIdx && oldStartInx <= oldEndIdx) {
+      if (!oldStartVnode) {  //
+        oldStartVnode = oldChildren[++oldStartInx]
+      } else if (newStartVnode.key === oldStartVnode.key) { // 比较 头部
+        this.patch(oldStartVnode,newStartVnode,container)
+        newStartVnode = newChildren[++newStartIdx]
+        oldStartVnode = oldChildren[++oldStartInx]
+      } else if (newEndVnode.key === oldEndVnode.key) {  //比较 尾部
+        this.patch(oldEndVnode,newEndVnode,container)
+        newEndVnode = newChildren[--newEndIdx]
+        oldEndVnode = oldChildren[--oldEndIdx]
+      } else if (newEndVnode.key === oldStartVnode.key) {  //新尾部<==>旧头部
+        this.patch(oldStartVnode,newEndVnode,container)
+        insert(oldStartVnode.el,container,oldEndVnode.el.nextSibling)
+        oldStartVnode = oldChildren[++oldStartInx]
+        newEndVnode = newChildren[--newEndIdx]
+      } else if (newStartVnode.key === oldEndVnode.key) {  //新头部 <==> 旧尾部
+        this.patch(oldEndVnode,newStartVnode,container)
+        insert(oldEndVnode.el,container,oldStartVnode.el)
+        oldEndVnode = oldChildren[--oldEndIdx]
+        newStartVnode = newChildren[++newStartIdx]
+      } else { //  无法通过比较头部和尾部得到结果的情况
+        let idxInOld = oldChildren.findIndex(v => v.key === newStartVnode.key)
+        if (idxInOld > 0) {
+          let nodeToMove = oldChildren[idxInOld]
+          oldChildren[idxInOld] = undefined
+          this.patch(nodeToMove,newStartVnode,container)
+          insert(nodeToMove.el,container,oldStartVnode.el)
+          newStartVnode = newChildren[++newStartIdx]
+
+        } else { //若在旧子节点中 找不到 newStartVnode相同的key ，说明需挂载为新节点
+          this.patch(null,newStartVnode,container,oldStartVnode.el)
+          newStartVnode = newChildren[++newStartIdx]
+        }
+      }
+    }
+    // 循环结束 检查索引 情况
+    if (oldEndIdx < oldStartInx && newStartIdx <= newEndIdx) {
+      for (let i = newStartIdx; i <= newEndIdx; i++) {
+        this.patch(null,newChildren[i],container,oldStartVnode.el)
+      }
+    }
 
   }
 

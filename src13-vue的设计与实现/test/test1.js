@@ -128,7 +128,7 @@ import Renderer from '../script/renderer.js'
 
 const R = new Reactivity()
 const renderer = new Renderer()
-const { TYPES: { Text,Comment,Fragment } } = renderer
+const { TYPES: { Comment,Fragment } } = renderer
 // Object.defineProperties(_r.__proto__,{
 //   ref: { enumerable: true },
 // })
@@ -136,12 +136,12 @@ window.myVue = { R,renderer }
 const a = R.ref(1)
 const b = R.ref(false)
 const { h } = renderer
-
 // R.effect(() => render(`<h1>${a.value}</h1>`,document.body))
 // R.effect(() => console.log(a.value))
 
 document.onclick = () => a.value++
-() => R.effect(() => {
+R.effect(() => {
+
   const vNode = h(Fragment,b.value && { onClick: () => console.log('父元素 clicked') },
     h('h2',{ style: 'color:red',className: ['test_1',{ test_2: true }] },'测试className ,style等props绑定'),
     h('h2',null,'测试响应式值：' + a.value),
@@ -183,23 +183,9 @@ const newVNode = {
 
 // 首次挂载
 renderer.render(oldVNode,document.querySelector('#app'))
-// setTimeout(() => {
-//   // 1 秒钟后更新
-//   renderer.render(newVNode,document.querySelector('#app'))
-// },1000);
+setTimeout(() => {
+  // 1 秒钟后更新
+  renderer.render(newVNode,document.querySelector('#app'))
+},1000);
 
-let t = <div>
-  <ul>
-    <li onClick={() => alert(122)}>demo</li>
-    <li>demo</li>
-    <li>demo</li>
-    <li>demo</li>
-    <li>demo</li>
-  </ul>
-  <h5 style={{ color: 'pink' }}>
-    <div style={'color:red'}> 密码： <input type='password' /></div>
-    <div> 账号： <input type='text' /></div>
-  </h5>
-</div>
 
-renderer.render(t,document.querySelector('#app'))
