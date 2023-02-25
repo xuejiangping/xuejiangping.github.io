@@ -1,6 +1,6 @@
 import Reactivity from '../script/reactivity.js'
 import Renderer from '../script/renderer.js'
-
+import compiler from '../script/compiler.js'
 // const reactivity = new Reactivity()
 
 // //#region 原始数据
@@ -128,7 +128,7 @@ import Renderer from '../script/renderer.js'
 
 const R = new Reactivity()
 const renderer = new Renderer()
-const { TYPES: { Comment,Fragment } } = renderer
+const { TYPES: { Comment,Fragment,Text } } = renderer
 // Object.defineProperties(_r.__proto__,{
 //   ref: { enumerable: true },
 // })
@@ -140,7 +140,8 @@ const { h } = renderer
 // R.effect(() => console.log(a.value))
 
 document.onclick = () => a.value++
-R.effect(() => {
+
+() => R.effect(() => {
 
   const vNode = h(Fragment,b.value && { onClick: () => console.log('父元素 clicked') },
     h('h2',{ style: 'color:red',className: ['test_1',{ test_2: true }] },'测试className ,style等props绑定'),
@@ -183,9 +184,34 @@ const newVNode = {
 
 // 首次挂载
 renderer.render(oldVNode,document.querySelector('#app'))
-setTimeout(() => {
-  // 1 秒钟后更新
-  renderer.render(newVNode,document.querySelector('#app'))
-},1000);
+// setTimeout(() => {
+//   // 1 秒钟后更新
+//   renderer.render(newVNode,document.querySelector('#app'))
+// },1000);
 
+// let tokens = ast.tokenize(str)
+// console.log('tokens',tokens)
+// console.log('122',122)
+
+R.effect(() => {
+  const str = `<div id="app" class="a b"><h1 blur >123</h1> <ul><li>11</li><li>22</li></ul></div>`
+
+  let res = compiler.parse(str)
+  console.log('res',res)
+  let v = ct(res)
+  console.log('v',v)
+  renderer.render(v,document.querySelector('#app'))
+
+})
+
+function ct(ast) {
+  const { type,props,children,tag } = ast
+  if (type === 'Element') {
+    return h(tag,props,children.map(c => ct(c)))
+  } else if (type === 'Text') {
+    // debugger
+    return h(Text,null,children)
+  }
+}
+// compiler.tansform(res)
 

@@ -1,3 +1,4 @@
+//  矩阵 乘法
 let a = [
   [0.9,0.3,0.4],
   [0.2,0.8,0.2],
@@ -29,11 +30,7 @@ function mutiplyMatrix(a,b) {
     })
   }
   return arr
-  // return a.reduce((t1,v1,i) => {
-  //   let res = v1.reduce((t2,v2,j) => v2 * getCol(b,0)[j] + t2,0)
-  //   t1.push([res])
-  //   return t1
-  // },[])
+
 }
 let res = mutiplyMatrix(a,b)
 

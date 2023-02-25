@@ -45,9 +45,7 @@ class Renderer {
     el._vNode = vNode
 
     if (props) { //为元素设置属性
-      for (const k in props) {
-        patchProps(el,k,null,props[k])
-      }
+      for (const k in props) patchProps(el,k,null,props[k])
     }
     if (typeof children === 'string') {
       insert(createText(children),el)
@@ -64,20 +62,20 @@ class Renderer {
    * @param {HTMLElement} container 
    */
   patch(n1,n2,container,anchor) {
-    console.log(n1,n2)
     // if (n2 === false) debugger
     const { TYPES: { Text,Comment,Fragment },rendererOptions: { createText,insert,createComment,setText,setComment } } = this
-    if (n1 && n1.type !== n2.type) { // 如果n1 n2 存在，且type不相等，直接卸载旧的vNode，挂载新的
+    // 如果n1 n2 存在，但type不相等，直接卸载旧的vNode，挂载新的
+    if (n1 && n1.type !== n2.type) {
       this.unmount(n1); n1 = null
     }
 
     const { type } = n2
 
     if (typeof type === 'string') { //元素节点
-      if (!n1) {  // 挂载
-        this.mountElement(n2,container,anchor)
-      } else { //打补丁 对比n1,n2
+      if (n1) {  //打补丁 对比n1,n2
         this.patchElement(n1,n2)
+      } else { // 挂载 
+        this.mountElement(n2,container,anchor)
       }
     } else if (type === Text) {  //文本节点
       if (n1) setText(n2.el = n1.el,n2.children)
@@ -104,16 +102,20 @@ class Renderer {
     // 更新props
     const { patchProps } = this.rendererOptions
     const el = n2.el = n1.el,newProps = n2.props,oldProps = n1.props
-    for (let k in newProps) { //添加新的props
-      if (k in oldProps) {
-        oldProps[k] !== newProps[k] && patchProps(el,k,oldProps[k],newProps[k])
-      } else {
-        patchProps(el,k,null,newProps[k])
+    if (newProps && oldProps) {
+      for (let k in newProps) { //添加新的props
+        if (oldProps == undefined) debugger
+        if (k in oldProps) {
+          oldProps[k] !== newProps[k] && patchProps(el,k,oldProps[k],newProps[k])
+        } else {
+          patchProps(el,k,null,newProps[k])
+        }
+      }
+      for (let k in oldProps) { //删除不存在的props
+        if (!(k in newProps)) patchProps(el,k,oldProps[k],null)
       }
     }
-    for (let k in oldProps) { //删除不存在的props
-      if (!(k in newProps)) patchProps(el,k,oldProps[k],null)
-    }
+
     // 更新children
 
     this.patchChildren(n1.children,n2.children,el)
@@ -136,7 +138,8 @@ class Renderer {
         console.log('Diff')
         //-------------------Diff-------------------
         // this.diff(oldChildren,newChildren,container)
-        this.doubleEndDiff(oldChildren,newChildren,container)
+        // this.doubleEndDiff(oldChildren,newChildren,container)
+        this.fastDiff(oldChildren,newChildren,container)
       } else { //旧节点children是文本或者空，则清空后渲染新的子节点
         setText(container)
         newChildren.forEach(c => this.patch(null,c,container))
@@ -148,12 +151,11 @@ class Renderer {
 
   }
   /**
-   * 简单diff算法
+   * 简单diff算法 性能较差
    * @param {VNODE[]} oldChildren 
    * @param {VNODE[]} newChildren
    */
   diff(oldChildren,newChildren,container) {
-    oldChildren
     let lastIndex = 0
     for (let i = 0; i < newChildren.length; i++) {
       const newVnode = newChildren[i]
@@ -188,7 +190,7 @@ class Renderer {
 
   }
   /**
-    * 双端 diff算法
+    * 双端 diff算法  通过比较 头部 和 尾部
     * @param {VNODE[]} oldChildren 
     * @param {VNODE[]} newChildren
     */
@@ -228,25 +230,84 @@ class Renderer {
           oldChildren[idxInOld] = undefined
           this.patch(nodeToMove,newStartVnode,container)
           insert(nodeToMove.el,container,oldStartVnode.el)
-          newStartVnode = newChildren[++newStartIdx]
         } else { //若在旧子节点中 找不到 newStartVnode相同的key ，说明需挂载为新节点
           this.patch(null,newStartVnode,container,oldStartVnode.el)
-          newStartVnode = newChildren[++newStartIdx]
         }
+        newStartVnode = newChildren[++newStartIdx]
       }
     }
-    // 新 子节点剩余部分 需要被挂载
+    // 若循环完后
+    // 新子节点剩余部分 需要被挂载
     if (oldEndIdx < oldStartInx && newStartIdx <= newEndIdx) {
       for (let i = newStartIdx; i <= newEndIdx; i++) {
         this.patch(null,newChildren[i],container,oldStartVnode.el)
       }
-      // 旧 子节点中多余的 需要删除
+      // 旧 子节点中有剩余  需要删除
     } else if (newEndIdx < newStartIdx && oldStartInx <= oldEndIdx) {
       for (let i = oldStartInx; i <= oldEndIdx; i++) this.unmount(oldChildren[i])
     }
 
   }
 
+  /**
+    *  快速 diff
+    * @param {VNODE[]} oldChildren 
+    * @param {VNODE[]} newChildren
+    */
+  fastDiff(oldChildren,newChildren,container) {
+    let startIdx = 0,pos = 0,moved = false
+    let oldEndIdx = oldChildren.length - 1,newEndIdx = newChildren.length - 1
+    let oldVnode = oldChildren[startIdx],newVnode = newChildren[startIdx]
+    while (oldVnode.key === newVnode.key) {
+      this.patch(oldVnode,newVnode,container)
+      oldVnode = oldChildren[++startIdx]; newVnode = newChildren[startIdx]
+    }
+    oldVnode = oldChildren[oldEndIdx],newVnode = newChildren[newEndIdx]
+    while (oldVnode.key === newVnode.key) {
+      this.patch(oldVnode,newVnode,container)
+      oldVnode = oldChildren[--oldEndIdx]; newVnode = newChildren[--newEndIdx]
+    }
+    if (startIdx <= newEndIdx && startIdx > oldEndIdx) { // 添加新节点
+      const anchor = oldChildren[startIdx + 1]?.el
+      while (startIdx <= newEndIdx) this.patch(null,newChildren[startIdx++],anchor)
+    } else if (newEndIdx < startIdx && startIdx <= oldEndIdx) { //移除旧节点
+      while (startIdx <= oldEndIdx) this.unmount(oldChildren[startIdx++])
+    } else {
+      let source = Array(newEndIdx - startIdx + 1).fill(-1) // 记录新节点 对应的旧节点的索引
+      const keyIndex = {}  // 将 新节点转换成索引表 {key:index},避免嵌套循环 ，降低时间复杂度
+      for (let j = startIdx; j <= newEndIdx; j++) keyIndex[newChildren[j].key] = j
+      for (let i = startIdx; i <= oldEndIdx; i++) {
+        let oldVnode = oldChildren[i]
+        const k = keyIndex[oldVnode.key]
+        if (k !== undefined) {  // 子节点 key 相同
+          let newVnode = newChildren[k]
+          this.patch(oldVnode,newVnode,container)
+          source[k - startIdx] = i // 填充数组
+          if (k < pos) moved = true
+          else pos = k
+        } else { //新节点中未找到 该旧子节点 需要卸载
+          this.unmount(oldVnode)
+        }
+      }
+      if (moved) {
+        const seq = this.rendererOptions.getSequence(source)
+        let s = seq.length - 1
+        for (let i = source.length - 1; i >= 0; i--) {
+          if (source[i] === -1) {  // 属于新节点 需要挂载
+            const pos = startIdx + i
+            this.patch(null,newChildren[pos],container,newChildren[pos + 1]?.el)
+          } else if (i !== seq[s]) {  //说明需要移动
+            const pos = startIdx + i
+            this.rendererOptions.insert(newChildren[pos].el,container,newChildren[pos + 1]?.el)
+          } // 不需移动
+          else s--
+        }
+
+      }
+
+    }
+
+  }
   // 卸载组件
   unmount(vNode) {
     if (vNode.type === this.TYPES.Fragment) {

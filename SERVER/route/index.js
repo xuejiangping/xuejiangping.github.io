@@ -1,4 +1,5 @@
 const cheerio = require('cheerio');
+const { IncomingMessage,ServerResponse } = require('http');
 const { TextDecoder } = require("util");
 
 const decoder = new TextDecoder()
@@ -46,6 +47,24 @@ async function search(keyword) {
 
 }
 
+/**
+ * 
+ * @param {IncomingMessage} req 
+ * @param {ServerResponse} res 
+ */
+function uploadFile(req,res) {
+  console.log('req.headers',req.headers)
+  let v = []
+  req.on('data',(c) => {
+    v.push(c)
+  })
+  req.on('end',() => {
+    let a = Buffer.concat(v)
+    console.log('a',a)
+  })
+  res.end('11')
+}
+
 module.exports = {
-  baike,proxy,onSaveHook
+  baike,proxy,onSaveHook,uploadFile
 }
