@@ -141,7 +141,7 @@ const { h } = renderer
 
 document.onclick = () => a.value++
 
-() => R.effect(() => {
+R.effect(() => {
 
   const vNode = h(Fragment,b.value && { onClick: () => console.log('父元素 clicked') },
     h('h2',{ style: 'color:red',className: ['test_1',{ test_2: true }] },'测试className ,style等props绑定'),
@@ -153,8 +153,10 @@ document.onclick = () => a.value++
     // h('input',{ form: 'form1' })
     h('h2',{ onClick: () => b.value = !b.value },h('h3',{ className: 'test_1' },b.value ? 'text1' : 'text2')),
     h(Comment,null,'测试注释节点'),
+    '1111111',
     !b.value && h('h2',null,Array(5).fill().map((_,i) => h('div',null,'测试length' + i)))
   )
+  console.log('vNode',vNode)
   renderer.render(vNode,document.querySelector('#app'))
 })
 // a.value = 99
@@ -193,24 +195,26 @@ renderer.render(oldVNode,document.querySelector('#app'))
 // console.log('tokens',tokens)
 // console.log('122',122)
 
-R.effect(() => {
-  const str = `<div id="app" class="a b"><h1 blur >123</h1> <ul><li>11</li><li>22</li></ul></div>`
+// R.effect(() => {
+//   const str = `<div id="app" class="a b"><h1 blur >123</h1> <ul><li>11</li><li>22</li></ul></div>`
 
-  let res = compiler.parse(str)
-  console.log('res',res)
-  let v = ct(res)
-  console.log('v',v)
-  renderer.render(v,document.querySelector('#app'))
+//   let res = compiler.parse(str)
+//   console.log('res',res)
+//   let v = ct(res)
+//   console.log('%c','color:red','v',v)
+//   renderer.render(v,document.querySelector('#app'))
 
-})
+// })
 
 function ct(ast) {
   const { type,props,children,tag } = ast
   if (type === 'Element') {
-    return h(tag,props,children.map(c => ct(c)))
+    let c = children.map(c => ct(c))
+    console.log('cc',c)
+    return h(tag,props,c)
   } else if (type === 'Text') {
     // debugger
-    return h(Text,null,children)
+    return children
   }
 }
 // compiler.tansform(res)

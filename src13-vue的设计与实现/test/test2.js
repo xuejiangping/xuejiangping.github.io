@@ -150,24 +150,24 @@ const {
 
 document.onclick = () => a.value++;
 () => R.effect(() => {
-  const vNode = h(Fragment, b.value && {
+  const vNode = h(Fragment,b.value && {
     onClick: () => console.log('父元素 clicked')
-  }, h('h2', {
+  },h('h2',{
     style: 'color:red',
-    className: ['test_1', {
+    className: ['test_1',{
       test_2: true
     }]
-  }, '测试className ,style等props绑定'), h('h2', null, '测试响应式值：' + a.value), h('h2', {
-    onClick: [() => console.log('click 事件'), () => console.log('click-alert')],
+  },'测试className ,style等props绑定'),h('h2',null,'测试响应式值：' + a.value),h('h2',{
+    onClick: [() => console.log('click 事件'),() => console.log('click-alert')],
     onContextmenu: () => console.log('Contextmenu 事件')
-  }, '测试事件绑定'),
-  // h('input',{ form: 'form1' })
-  h('h2', {
-    onClick: () => b.value = !b.value
-  }, h('h3', {
-    className: 'test_1'
-  }, b.value ? 'text1' : 'text2')), h(Comment, null, '测试注释节点'), !b.value && h('h2', null, Array(5).fill().map((_, i) => h('div', null, '测试length' + i))));
-  renderer.render(vNode, document.querySelector('#app'));
+  },'测试事件绑定'),
+    // h('input',{ form: 'form1' })
+    h('h2',{
+      onClick: () => b.value = !b.value
+    },h('h3',{
+      className: 'test_1'
+    },b.value ? 'text1' : 'text2')),h(Comment,null,'测试注释节点'),!b.value && h('h2',null,Array(5).fill().map((_,i) => h('div',null,'测试length' + i))));
+  renderer.render(vNode,document.querySelector('#app'));
 });
 // a.value = 99
 // console.log('a',a)
@@ -180,11 +180,11 @@ const oldVNode = {
     type: 'p',
     children: '1',
     key: 1
-  }, {
+  },{
     type: 'p',
     children: '2',
     key: 2
-  }, {
+  },{
     type: 'p',
     children: 'hello',
     key: 3
@@ -196,15 +196,15 @@ const newVNode = {
     type: 'p',
     children: '3',
     key: 4
-  }, {
+  },{
     type: 'p',
     children: 'world',
     key: 3
-  }, {
+  },{
     type: 'p',
     children: '1',
     key: 1
-  }, {
+  },{
     type: 'p',
     children: '2',
     key: 2
@@ -212,23 +212,23 @@ const newVNode = {
 };
 
 // 首次挂载
-renderer.render(oldVNode, document.querySelector('#app'));
+renderer.render(oldVNode,document.querySelector('#app'));
 // setTimeout(() => {
 //   // 1 秒钟后更新
 //   renderer.render(newVNode,document.querySelector('#app'))
 // },1000);
 
-let t = /*#__PURE__*/h("div", null, /*#__PURE__*/h("ul", null, /*#__PURE__*/h("li", {
+let t = /*#__PURE__*/h("div",null, /*#__PURE__*/h("ul",null, /*#__PURE__*/h("li",{
   onClick: () => alert(122)
-}, "demo"), /*#__PURE__*/h("li", null, "demo"), /*#__PURE__*/h("li", null, "demo"), /*#__PURE__*/h("li", null, "demo"), /*#__PURE__*/h("li", null, "demo")), /*#__PURE__*/h("h5", {
+},"demo"), /*#__PURE__*/h("li",null,"demo"), /*#__PURE__*/h("li",null,"demo"), /*#__PURE__*/h("li",null,"demo"), /*#__PURE__*/h("li",null,"demo")), /*#__PURE__*/h("h5",{
   style: {
     color: 'pink'
   }
-}, /*#__PURE__*/h("div", {
+}, /*#__PURE__*/h("div",{
   style: 'color:red'
-}, " \u5BC6\u7801\uFF1A ", /*#__PURE__*/h("input", {
+}," \u5BC6\u7801\uFF1A ", /*#__PURE__*/h("input",{
   type: "password"
-})), /*#__PURE__*/h("div", null, " \u8D26\u53F7\uFF1A ", /*#__PURE__*/h("input", {
+})), /*#__PURE__*/h("div",null," \u8D26\u53F7\uFF1A ", /*#__PURE__*/h("input",{
   type: "text"
 }))));
-renderer.render(t, document.querySelector('#app'));
+renderer.render(t,document.querySelector('#app'));

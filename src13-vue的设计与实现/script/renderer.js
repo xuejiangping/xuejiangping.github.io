@@ -29,8 +29,16 @@ class Renderer {
   }
   // 辅助生成vNode 的函数
   h = ((key,{ TYPES: { Text } }) => function (type,props,...args) {
-
-    return { key: key++,type,props,children: args.flatMap(c => typeof c === 'string' ? { type: Text,props: null,children: c } : c) }
+    return {
+      key: key++,type,props,
+      children: args.filter(c => !!c).flatMap(c => {
+        if (typeof c === 'string') {
+          return { key,type: Text,props: null,children: c }
+        } else {
+          return c
+        }
+      })
+    }
 
   })(0,this)
 
@@ -138,8 +146,8 @@ class Renderer {
         console.log('Diff')
         //-------------------Diff-------------------
         // this.diff(oldChildren,newChildren,container)
-        // this.doubleEndDiff(oldChildren,newChildren,container)
-        this.fastDiff(oldChildren,newChildren,container)
+        this.doubleEndDiff(oldChildren,newChildren,container)
+        // this.fastDiff(oldChildren,newChildren,container)
       } else { //旧节点children是文本或者空，则清空后渲染新的子节点
         setText(container)
         newChildren.forEach(c => this.patch(null,c,container))
@@ -224,7 +232,7 @@ class Renderer {
         oldEndVnode = oldChildren[--oldEndIdx]
         newStartVnode = newChildren[++newStartIdx]
       } else { //  无法通过比较头部和尾部得到结果的情况
-        let idxInOld = oldChildren.findIndex(v => v.key === newStartVnode.key)
+        let idxInOld = oldChildren.findIndex((v,i,o) => v.key === newStartVnode.key)
         if (idxInOld > 0) {
           let nodeToMove = oldChildren[idxInOld]
           oldChildren[idxInOld] = undefined
@@ -236,7 +244,7 @@ class Renderer {
         newStartVnode = newChildren[++newStartIdx]
       }
     }
-    // 若循环完后
+    // 若循环完后   
     // 新子节点剩余部分 需要被挂载
     if (oldEndIdx < oldStartInx && newStartIdx <= newEndIdx) {
       for (let i = newStartIdx; i <= newEndIdx; i++) {

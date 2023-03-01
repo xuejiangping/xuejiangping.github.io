@@ -1,6 +1,10 @@
 {
+  "scripts": {
+    "ts-debugger":"ts-node"
+  },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
+    "mathjs": "^11.6.0",
     "nodejs-websocket": "^1.7.2",
     "ws": "^8.12.0"
   },
