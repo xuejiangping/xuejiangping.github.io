@@ -1,9 +1,30 @@
 const cheerio = require('cheerio');
 const { IncomingMessage,ServerResponse } = require('http');
 const { TextDecoder } = require("util");
-
+const fs = require('fs');
+const { Readable } = require('stream');
+const soundHound = require('../../../../网易云/NeteaseCloudMusic-Audio-Recognize/index.js')
 const decoder = new TextDecoder()
 
+
+
+function shiqu(req,res) {
+  let ckArr = []
+  req.on('data',ck => ckArr.push(ck))
+  req.on('end',() => {
+    let buffer = Buffer.concat(ckArr)
+    console.log('ckArr',ckArr)
+    console.log('buffer',buffer)
+
+    // soundHound(buffer).then(val => {
+    //   let data = val.data.data?.result[0]
+    //   res.end(data)
+    // })
+    // res.end('231')
+
+  })
+  res.end('1')
+}
 function baike(req,res) {
   const keyword = req.query.get('keyword')
   console.log('keyword',keyword)
@@ -28,8 +49,10 @@ function onSaveHook(req,res,cb) {
     res.end()
   })
 }
+
+
 // search('狄仁杰')
-async function search(keyword) {
+function search(keyword) {
   return new Promise(async (resolve) => {
     let url = 'https://baike.baidu.com/item/' + keyword
     // url = encodeURI(url)
@@ -64,7 +87,23 @@ function uploadFile(req,res) {
   })
   res.end('11')
 }
+const ws = fs.createWriteStream('./aaa.txt',{ flags: 'a' })
+
+
+function danmu(req,res) {
+  res.end()
+  const formatData = data => (
+    `
+      昵称：${data.uname}
+      弹幕：${data.danmaku}
+    `
+  )
+  const data = JSON.parse(req.query.get('data'))
+  console.log('data',data[0])
+  data.forEach(v => ws.write(formatData(v)))
+}
+
 
 module.exports = {
-  baike,proxy,onSaveHook,uploadFile
+  baike,proxy,onSaveHook,uploadFile,danmu,shiqu
 }

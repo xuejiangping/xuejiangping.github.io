@@ -1,4 +1,5 @@
 const { WriteStream,createWriteStream,readFileSync } = require("fs")
+const stream = require('node:stream');
 const Server = {
   http: require('http'),
   https: require('https')
@@ -6,8 +7,9 @@ const Server = {
 
 const WS = require('ws').Server
 const { parse: parseURL } = require("url");
-const { proxy,onSaveHook,baike,uploadFile } = require("./route/index");
+const { proxy,onSaveHook,baike,uploadFile,danmu,shiqu } = require("./route/index");
 const path = require("path");
+const { Stream } = require("stream");
 const host = 'localhost'
 const port = 9000
 const protocol = 'http'
@@ -30,9 +32,17 @@ const router = {
   '/baike': baike,
   '/proxy': proxy,
   '/onSaveHook': (req,res) => onSaveHook(req,res,broadcast),
-  '/uploadFile': uploadFile
+  '/uploadFile': uploadFile,
+  '/danmu': danmu,
+  '/test': (req,res) => {
+    res.end('999')
+    console.log(req.method)
+    let str = ''
+    req.on('data',ck => str += ck)
+    req.on('end',() => console.log(str))
+  },
+  '/shiqu': shiqu
 }
-
 
 
 
@@ -42,7 +52,6 @@ const app = Server[protocol].createServer(options,(req,res) => {
   res.setHeader('Content-Type','text/html;charset=UTF-8')
   res.setHeader('access-control-allow-origin','*')
   res.setHeader('Access-Control-Allow-Headers','*')
-
 }).listen(port,host,() => console.log(`服务器启动成功: ${protocol}://${host}:${port}`))
   .on('request',(req,res) => {
     const { pathname,query } = parseURL(req.url)
@@ -51,7 +60,8 @@ const app = Server[protocol].createServer(options,(req,res) => {
       console.log(pathname)
       router[pathname](req,res)
     } else {
-      res.end('<h1>~~~~~~~~ 404 NOT FOUND ~~~~~~~~~~</h1>')
+      res.writeHead(404,{ 'Content-Type': 'text/html' })
+        .end('<h1>~~~~~~~~ 404 NOT FOUND ~~~~~~~~~~</h1>')
     }
   })
 

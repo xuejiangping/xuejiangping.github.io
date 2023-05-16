@@ -11,6 +11,7 @@ let b = [
   [0.1],
   [0.8],
 ]
+// 阈值函数
 function sigmoid(x) {
   return 1 / (Math.exp(-x) + 1)
 }
@@ -99,4 +100,5 @@ function inverse(a) {
   }
   return res
 }
+
 
