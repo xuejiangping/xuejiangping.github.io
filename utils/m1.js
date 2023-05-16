@@ -38,8 +38,9 @@
       console.log('未找到元素',selectors)
     }
   })(window.document,window.frames);
+  const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
 
   return {
-    findElement
+    findElement,log
   }
 }))
