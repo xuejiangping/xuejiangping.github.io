@@ -38,6 +38,7 @@
       console.log('未找到元素',selectors)
     }
   })(window.document,window.frames);
+  // 记录日志
   const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
 
   return {
