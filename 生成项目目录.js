@@ -9,6 +9,6 @@ async function generateIndexPage(myPath) {
   let data = await readFile(myPath + 'index.html','utf-8')
   let newData = data.replace(reg2,res)
   await writeFile(myPath + 'index.html',newData)
-  console.log('写入完成')
+  console.log('更新目录完成')
 }
 generateIndexPage('./')
