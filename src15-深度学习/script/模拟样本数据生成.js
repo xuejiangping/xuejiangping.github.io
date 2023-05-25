@@ -36,7 +36,7 @@ function createCsvFile(dataArr,fileName) {
 let b = Array(20).fill().map(v => {
   let size = randomNum(3,10)
   let age = randomNum(25,60)
-  let ill = size * 0.1 + age * 0.01 > 1
+  let ill = size * 0.1 + age * 0.01 > 1 ? 1 : 0
 
   return {
     size,age,ill

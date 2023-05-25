@@ -39,19 +39,14 @@ const dj_db = (dataArr,m,v_w,b) => dataArr.reduce((t,{ v_x,y }) => yfn(v_w,v_x,b
  * 
  */
 function gradientDescent(v_w_in,b_in,dataArr,num_iters,L,l) {
-  let v_w = v_w_in
-  let b = b_in,cost
+  let v_w = v_w_in,b = b_in
+  let cost
   const m = dataArr.length
 
   for (let i = 0; i < num_iters; i++) {
-    cost = J(dataArr,m,v_w,b,l)
-    b = b - L * dj_db(dataArr,m,v_w,b)
-    v_w = v_w.map((w,j) => w - L * dj_dw_j(dataArr,m,v_w,b,j,l))
-
+    cost = J(dataArr,m,v_w,b,l);
+    [b,v_w] = [b - L * dj_db(dataArr,m,v_w,b),v_w.map((w,j) => w - L * dj_dw_j(dataArr,m,v_w,b,j,l))];
   }
-  // console.table({
-  //   v_w,b,cost
-  // })
   return {
     v_w,b,cost,num_iters,L,l
   }

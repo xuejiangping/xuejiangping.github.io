@@ -30,6 +30,7 @@ export interface NdArray<T = number> extends BaseNdArray<Data<T>> {
      */
     dot(x: NjArray<T>): NdArray<T>;
 
+    log(x: NjArray<T>): NdArray<T>;
     /**
      * Assign `x` to the array, element-wise.
      */
