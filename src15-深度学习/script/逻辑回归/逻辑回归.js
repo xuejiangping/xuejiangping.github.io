@@ -23,7 +23,6 @@ const dJ_dw_j = (dataArr,v_w,b,j,l) => {
 }
 
 
-
 const dJ_db = (dataArr,v_w,b) => {
   return dataArr.reduce((t,{ v_x,y }) => yFn(v_w,v_x,b).subtract(y).add(t),0).divide(dataArr.length).get(0)
 }

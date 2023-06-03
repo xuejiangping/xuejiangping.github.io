@@ -1,9 +1,11 @@
 {
   "scripts": {
-    "ts-debugger": "ts-node"
+    "ts-debugger": "ts-node",
+    "start":"vite --open "
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.6.0",
+    "@tensorflow/tfjs-node": "^4.6.0",
     "@types/numjs": "^0.16.2",
     "cheerio": "^1.0.0-rc.12",
     "mathjs": "^11.6.0",
@@ -12,6 +14,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.21.0",
-    "@babel/preset-react": "^7.18.6"
+    "@babel/preset-react": "^7.18.6",
+    "vite": "^4.3.9"
   }
 }

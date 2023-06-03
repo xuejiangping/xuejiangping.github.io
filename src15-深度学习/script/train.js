@@ -15,9 +15,6 @@ const formatCancerData = (data) => data.map(({ size,age,ill }) => ({ v_x: [size,
 
 
 
-
-
-
 const processIndex = process.argv[2]
 // console.log('processIndex',processIndex)
 const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)

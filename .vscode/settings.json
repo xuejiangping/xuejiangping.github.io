@@ -7,4 +7,5 @@
     "editor.defaultFormatter": "ms-python.autopep8"
   },
   "python.formatting.provider": "none",
+  "liveServer.settings.port": 5501,
 }

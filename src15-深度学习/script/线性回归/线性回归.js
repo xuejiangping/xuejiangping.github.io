@@ -1,3 +1,4 @@
+const tf = require('@tensorflow/tfjs-node')
 const houseData = require('../../assets/houseData.json')
 const houseData2 = require('../../assets/houseData2.json')
 
@@ -68,9 +69,37 @@ function start(dataArr) {
 
 }
 
-const testDataArr = houseData.map(({ s,p }) => [s,p])
-// start([[1,1],[2,2],[3,3],[4,4],[5,5],[6,6]])
-start(testDataArr)
+// const testDataArr = houseData.map(({ s,p }) => [s,p])
+// // start([[1,1],[2,2],[3,3],[4,4],[5,5],[6,6]])
+// start(testDataArr)
 
 // console.log('houseData.map(({s,p})=>[s,p])',houseData.map(({ s,p }) => [s,p]))
 // debugger
+
+/**
+ *  样本 特征缩放
+ * @param {tf.Tensor} data
+ */
+function normalizeTensor(data) {
+  const dataMean = data.mean(0);
+  // TODO(bileschi): Simplify when and if tf.var / tf.std added to the API.
+  const diffFromMean = data.sub(dataMean);
+  const squaredDiffFromMean = diffFromMean.square();
+  const variance = squaredDiffFromMean.mean(0);
+  const dataStd = variance.sqrt();
+
+  return diffFromMean.div(dataStd)
+  // return { dataMean,dataStd };
+}
+
+
+// let f = tf.tensor([10,20,30,40])
+// let a = f.sub(f.mean())
+// let std = a.pow(2).mean().sqrt()
+// let b = a.div(std)
+// b.print()
+let a = tf.randomUniformInt([5,3],1,10)
+a.print()
+
+
+debugger

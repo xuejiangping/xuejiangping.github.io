@@ -1,25 +1,26 @@
-// import * as tf from 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js'
-const tf = require('@tensorflow/tfjs')
-
-// console.log('tf.scalar',tf.scalar)
-// const a = tf.scalar(2)
-// const b = tf.scalar(4)
-// const c = tf.scalar(8)
+const tf = require('@tensorflow/tfjs-node')
 
 
-// function predict(ipt) {
-//   // tf.tidy
-//   return tf.tidy(() => {
-//     const x = tf.scalar(ipt)
-//     const ax2 = a.mul(x.square())
-//     const bx = b.mul(x)
-//     const y = ax2.add(bx).add(c)
-//     return y
-//   })
+const a1 = tf.tensor2d([[0.2,0.5,0.4]],[1,3],'float32')
 
-// }
 
-// predict(2).print()
-// // debugger
+const myModel = () => {
+  const layer1 = tf.layers.dense({ activation: 'sigmoid',units: 3,inputShape: [1,2] })
+  const layer2 = tf.layers.dense({ activation: 'sigmoid',units: 2,inputShape: [1,3] })
+  const model = tf.sequential({ layers: [layer1,layer2] })
+  model.compile()
 
-console.log('12',12)
+}
+
+
+/**
+ * 实现 dense函数 功能,参数中的数组都是 numjs 数组，非js原生数组
+ * @param {*} a_in 上层的输入
+ * @param {w[][]} W 该层神经网络的v_w
+ * @param {b[]} B 该层神经网络的 因子b
+ * @param {sigmoidFN} g 激活函数
+ */
+function myDense(a_in,W,B,g) {
+  let z = W.dot(a_in.T).add(B)
+  return g(z)
+}

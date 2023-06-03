@@ -6,13 +6,27 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./style/index.css">
-    <script defer src="./script/index.js" type="module"></script>
+    <!-- <script defer src="./script/index.js" type="module"></script> -->
     <title>浮生浪迹笑明月</title>
-
+    <script src="../src15-深度学习/script/lib/numjs.min.js"></script>
   </head>
 
   <body>
     <h1>demo</h1>
+    <canvas id="cvs" width="400" height="400" style="border: 1px solid;"></canvas>
+    <!-- <img id="img" src="../src1-画板/assets/街霸.jpg" alt=""> -->
+    <img id="img" src="../src9-图片处理-像素化/assets/IMG_1425.JPG" alt="">
+    <script>
+      /**@type {HTMLCanvasElement} */
+      let cvs = document.getElementById('cvs')
+      let ctx = cvs.getContext('2d')
+      ctx.drawImage(img,0,0,100,100)
+
+
+    </script>
+
+
+
   </body>
 
 </html>

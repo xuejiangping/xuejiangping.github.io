@@ -43,6 +43,7 @@ function gradientDescent(v_w_in,b_in,dataArr,num_iters,L,l) {
   let cost
   const m = dataArr.length
 
+
   for (let i = 0; i < num_iters; i++) {
     cost = J(dataArr,m,v_w,b,l);
     [b,v_w] = [b - L * dj_db(dataArr,m,v_w,b),v_w.map((w,j) => w - L * dj_dw_j(dataArr,m,v_w,b,j,l))];
