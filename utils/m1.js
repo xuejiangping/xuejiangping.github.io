@@ -50,6 +50,6 @@
     // 睡眠
     const asleep = (time) => new Promise(res => setTimeout(res,time))
     return {
-      findElement,log
+      findElement,log,asleep
     }
   }))
