@@ -2,12 +2,12 @@
 (function (root,factory) {
   console.log('没有模块环境，直接挂载在全局对象上')
   if (!root) return console.error('未找到全局对象')
-  return root.umdModule = factory();
+  return root.umdModule = factory(root);
 }(typeof this === 'object' ? this
   : typeof global === 'object' ? global
     : typeof globalThis === 'object' ? globalThis
       : typeof window === 'object' ? window : null,
-  function () {
+  function (global) {
 
     // 寻找元素
     const findElement = ((lastDoc,frames) => {
@@ -44,7 +44,7 @@
         }
         console.log('未找到元素',selectors)
       }
-    })(window.document,window.frames);
+    })(global.document,global.frames);
     // 记录日志
     const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
     // 睡眠
