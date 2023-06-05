@@ -47,7 +47,8 @@
     })(window.document,window.frames);
     // 记录日志
     const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
-
+    // 睡眠
+    const asleep = (time) => new Promise(res => setTimeout(res,time))
     return {
       findElement,log
     }
