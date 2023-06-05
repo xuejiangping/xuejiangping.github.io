@@ -2,7 +2,7 @@
 (function (root,factory) {
   console.log('没有模块环境，直接挂载在全局对象上')
   if (!root) return console.error('未找到全局对象')
-  root.umdModule = factory();
+  return root.umdModule = factory();
 }(typeof this === 'object' ? this
   : typeof global === 'object' ? global
     : typeof globalThis === 'object' ? globalThis
