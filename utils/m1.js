@@ -2,7 +2,7 @@
 (function (root,factory) {
   console.log('没有模块环境，直接挂载在全局对象上')
   root.umdModule = factory();
-}(this || global || window,function () {
+}(this || globalThis || window,function () {
   // 寻找元素
   const findElement = ((lastDoc,frames) => {
     return function (selectors,isAll = false) {
