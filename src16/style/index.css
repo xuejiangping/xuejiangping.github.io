@@ -1,0 +1,12 @@
+.item {
+  background-color: #000;
+}
+#box table {
+  background-color: #94a37b88;
+  border-spacing: 1px;
+}
+#box table td {
+  border: 1px dotted #4f4f4fc1;
+  width: 30px;
+  height: 30px;
+}

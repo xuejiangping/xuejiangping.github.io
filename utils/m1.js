@@ -49,7 +49,22 @@
     const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
     // 睡眠
     const asleep = (time) => new Promise(res => setTimeout(res,time))
-    return {
-      findElement,log,asleep
+
+    function hash(algorithm,data) {
+      if (typeof data === 'string') {
+        const encoder = new TextEncoder()
+        data = encoder.encode(data)
+      }
+      if (window.crypto.subtle) {
+        return crypto.subtle.digest(algorithm,data).then(ab => {
+          return [... new Uint8Array(ab)].map(v => v.toString(16).padStart(2,'0')).join('')
+        })
+      } else {
+        console.error('当前环境中无 crypto')
+      }
     }
+    return {
+      findElement,log,asleep,hash
+    }
+
   }))

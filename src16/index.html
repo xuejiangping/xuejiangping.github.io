@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style/index.css">
+    <!-- <script defer type="module" src="./script/index.js"></script> -->
+    <title>浮生浪迹笑明月</title>
+  </head>
+
+  <body>
+    <!-- <h1>demo</h1> -->
+    <div id="box">
+
+      <table>
+        <tbody>
+
+        </tbody>
+      </table>
+    </div>
+    <!-- =============================================================================================== -->
+    <div class="testbox">
+      <h1 title="FC2-PPV-999999999" class="mantine-Title-root mantine-1cit7qt" color="white">
+        ークラスFC2伝説の FC2-PPV-1909413
+        ♡純白のロリ天使♡アイドルセンタークラスFC2伝説の女神にガチ中出ししてみた(´▽｀)♡無♡</h1>
+
+      <h1 data-v=" FC2-PPV-55555555 FC2-PPV-22222222" class="mantine-Title-root mantine-1cit7qt" color="white">
+        ークラスFC2伝説の FC2-PPV-1909546
+        ♡純白のロリ天使♡アイドルセンタークラスFC2伝説の女神にガチ中出ししてみた(´▽｀)♡無♡</h1>
+    </div>
+    <span style="background-color: red" class="diy-fc2-item">$&</span>
+    <script>
+      let el = document.querySelector('.testbox')
+      let a = el.innerHTML
+      let t = /(?<=<body>)(.|\n|\r)*?(?=<\/body>)/
+      let replaceText = '<span style="background-color: red;">$&</span>'
+      let reg = /(?<=<[a-zA-Z]+.*?>[^>]*)(fc2\-(ppv\-)?\d+)(?=[^<]*<\/[a-zA-Z]+.*?>)/ig
+      let val = a.match(reg)
+
+      let b = a.replace(reg,replaceText)
+      el.innerHTML = b
+      console.log('val',val)
+
+      function replaceFC2(htmlStr,replaceText = '<span  style="background-color: red;">$&</span>') {
+        let reg = /(?<=<[a-zA-Z]+.*?>[^>]*)(fc2\-(ppv\-)?\d+)(?=[^<]*<\/[a-zA-Z]+.*?>)/ig
+        return htmlStr.replace(reg,replaceText)
+      }
+
+      // console.log('b',b)
+    </script>
+  </body>
+
+</html>

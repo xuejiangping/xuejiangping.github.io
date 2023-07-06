@@ -9,10 +9,9 @@ const WS = require('ws').Server
 const { parse: parseURL } = require("url");
 const { proxy,onSaveHook,baike,uploadFile,danmu,shiqu } = require("./route/index");
 const path = require("path");
-const { Stream } = require("stream");
-const host = 'localhost'
-const port = 9000
-const protocol = 'http'
+const host = '0.0.0.0'
+const port = 8081
+const protocol = 'https'
 const ws_protocol = protocol === 'http' ? 'ws' : 'wss'
 const options = {
   cert: readFileSync(path.join(__dirname,'./cert/cert.pem')),
