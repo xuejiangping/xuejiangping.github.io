@@ -6,7 +6,7 @@
     "add-item": "pwsh ./script/addItem.ps1 ",
     "test": "script/test.ps1",
     "myServer": "node ./SERVER/app.js",
-    "push": "git push"
+    "push": "git push origin master"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.6.0",
