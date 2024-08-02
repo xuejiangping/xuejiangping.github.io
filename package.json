@@ -2,11 +2,11 @@
   "scripts": {
     "ts-debugger": "ts-node",
     "start": "vite --open ",
-    "update": "node ./script/更新项目目录.js",
+    "updateItems": "node ./script/更新项目目录.js",
     "add-item": "pwsh ./script/addItem.ps1 ",
     "test": "script/test.ps1",
     "myServer": "node ./SERVER/app.js",
-    "push": "git push origin master"
+    "push": "git commit -a -m '1234' && git push origin master"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.6.0",
