@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style/index.css">
+    <script defer src="./script/index.js"></script>
+    <title>浮生浪迹笑明月</title>
+  </head>
+
+  <body>
+    <h1>demo demo demo<span>12</span></h1>
+
+    <div style="display: flex;">
+      <canvas id="cvs"></canvas>
+
+
+
+      <div id="container">
+        <div class="item">1</div>
+        <div class="item">2</div>
+        <div class="item">3</div>
+        <div class="item">4</div>
+      </div>
+
+    </div>
+    <template id="loading">
+      <!-- 黑白交替loading -->
+      <div class="loading">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </template>
+
+
+    <script>
+
+      const t = document.getElementById('loading')
+      const container = document.getElementById('container')
+      const cloneNode = document.importNode(t.content,true);
+      // console.log('cloneNode',cloneNode)
+
+      ([...container.children]).forEach(item => {
+        console.log('item',item)
+        item.append(cloneNode.cloneNode(true))
+      })
+    </script>
+  </body>
+
+</html>

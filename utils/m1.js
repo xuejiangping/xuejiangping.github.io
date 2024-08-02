@@ -49,7 +49,7 @@
     const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
     // 睡眠
     const asleep = (time) => new Promise(res => setTimeout(res,time))
-
+    //hash 加密
     function hash(algorithm,data) {
       if (typeof data === 'string') {
         const encoder = new TextEncoder()
@@ -63,8 +63,25 @@
         console.error('当前环境中无 crypto')
       }
     }
+    // 通过 createNodeIterator  条件 遍历dom 元素
+    function traverseDom(dom,filterFn) {
+      const nodeIterator = document.createNodeIterator(
+        dom,
+        NodeFilter.SHOW_ELEMENT,
+        (node) => filterFn(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+      );
+      const pars = [];
+      let currentNode;
+      while (currentNode = nodeIterator.nextNode()) {
+        pars.push(currentNode);
+      }
+      return pars
+    }
+
+
+
     return {
-      findElement,log,asleep,hash
+      findElement,log,asleep,hash,traverseDom
     }
 
   }))

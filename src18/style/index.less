@@ -1,0 +1,35 @@
+ #normal {
+
+   border: 2px solid blue;
+   border-collapse: collapse;
+
+
+
+   td {
+     padding: 5px;
+
+     span {
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       width: 40px;
+       height: 40px;
+       border: 1px solid #cdcdcd;
+       overflow: hidden;
+
+     }
+   }
+
+   tr:not(:last-child):nth-child(3n) {
+     /* background-color: red; */
+     border-bottom: 1px solid red;
+   }
+
+   tr td:not(:last-child):nth-child(3n) {
+     border-right: 1px solid red;
+   }
+
+   /* & tr {
+          background-color: red;
+        } */
+ }

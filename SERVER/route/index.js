@@ -3,7 +3,7 @@ const { IncomingMessage,ServerResponse } = require('http');
 const { TextDecoder } = require("util");
 const fs = require('fs');
 const { Readable } = require('stream');
-const soundHound = require('../../../../网易云/NeteaseCloudMusic-Audio-Recognize/index.js')
+// const soundHound = require('../../../../网易云/NeteaseCloudMusic-Audio-Recognize/index.js')
 const decoder = new TextDecoder()
 
 
@@ -89,18 +89,29 @@ function uploadFile(req,res) {
 }
 const ws = fs.createWriteStream('./aaa.txt',{ flags: 'a' })
 
-
+/**
+ * 
+ * @param {*} req 
+ * @param {ServerResponse} res 
+ */
 function danmu(req,res) {
-  res.end()
+  res.statusCode = 200
+  res.end('ok')
+
   const formatData = data => (
     `
       昵称：${data.uname}
       弹幕：${data.danmaku}
     `
   )
-  const data = JSON.parse(req.query.get('data'))
-  console.log('data',data[0])
-  data.forEach(v => ws.write(formatData(v)))
+  try {
+    const data = JSON.parse(req.query.get('data'))
+    console.log('data',data)
+  } catch (error) {
+    console.error(error)
+  }
+
+  // data.forEach(v => ws.write(formatData(v)))
 }
 
 

@@ -1,7 +1,12 @@
 {
   "scripts": {
     "ts-debugger": "ts-node",
-    "start":"vite --open "
+    "start": "vite --open ",
+    "update": "node ./script/更新项目目录.js",
+    "add-item": "pwsh ./script/addItem.ps1 ",
+    "test": "script/test.ps1",
+    "myServer": "node ./SERVER/app.js",
+    "push": "git push"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.6.0",
@@ -10,6 +15,7 @@
     "cheerio": "^1.0.0-rc.12",
     "mathjs": "^11.6.0",
     "nodejs-websocket": "^1.7.2",
+    "nodemailer": "^6.9.7",
     "ws": "^8.12.0"
   },
   "devDependencies": {

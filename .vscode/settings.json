@@ -1,11 +1,11 @@
 {
-  "commentTranslate.source": "DarkCWK.youdao-youdao",
-  "commentTranslate.targetLanguage": "zh-CN",
-  "commentTranslate.multiLineMerge": false,
-  "commentTranslate.hover.enabled": true,
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.autopep8"
-  },
-  "python.formatting.provider": "none",
-  "liveServer.settings.port": 5501,
+	"commentTranslate.source": "DarkCWK.youdao-youdao",
+	"commentTranslate.targetLanguage": "zh-CN",
+	"commentTranslate.multiLineMerge": false,
+	"commentTranslate.hover.enabled": true,
+	"[python]": {
+		"editor.defaultFormatter": "ms-python.autopep8"
+	},
+	"python.formatting.provider": "none",
+	"liveServer.settings.port": 5514
 }

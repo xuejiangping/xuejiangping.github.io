@@ -46,6 +46,7 @@ document.onkeydown = document.onkeyup = document.onkeypress = function (event) {
     onDebug();
   }
 };
+Object.defineProperty({},'a',{ ''})
 
 /*调试相关的函数重定义*/
 // window['console']['log']= function(){};

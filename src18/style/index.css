@@ -1,0 +1,26 @@
+#normal {
+  border: 2px solid blue;
+  border-collapse: collapse;
+  /* & tr {
+          background-color: red;
+        } */
+}
+#normal td {
+  padding: 5px;
+}
+#normal td span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #cdcdcd;
+  overflow: hidden;
+}
+#normal tr:not(:last-child):nth-child(3n) {
+  /* background-color: red; */
+  border-bottom: 1px solid red;
+}
+#normal tr td:not(:last-child):nth-child(3n) {
+  border-right: 1px solid red;
+}
