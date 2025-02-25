@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style/index.css">
+    <title>浮生浪迹笑明月</title>
+  </head>
+
+  <body>
+    <h1>demo</h1>
+    <!-- <div class="cube"></div> -->
+    <video id="video" src="./assets/mov_bbb.mp4" controls></video>
+    <div><input type="range" name="" id="ipt"></div>
+    <hr>
+    <!-- <canvas id="cvs" width="400" height="400"></canvas> -->
+
+
+    <script>
+
+
+      class DanmuSystem {
+
+        constructor(options) {
+          this.video = options.video;
+          /**@type {Set<Danmu>} */
+          this.danmus = new Set();
+          this.cvs = document.createElement('canvas');
+          this.ctx = this.cvs.getContext('2d');
+          this.direction = options.direction || 'left';
+          this.lines = options.lines || 3;
+          this.y_gap = 50
+          this.x_gap = 80
+          this.newVideo = document.createElement('video');
+
+          this.waittingQueue = [];
+          /**@type {(Danmu|0)[]} */
+          this.lastDamuInlines = Array(this.lines).fill(0);
+          this.init()
+        }
+        init() {
+          this.cvs.width = this.video.videoWidth;
+          this.cvs.height = this.video.videoHeight;
+          this.size = Math.max(this.cvs.height / (this.lines * 2),30);
+          this.cvs.style.border = '1px solid red';
+          this.newVideo.srcObject = this.cvs.captureStream();
+          this.newVideo.addEventListener('loadedmetadata',() => {
+            this.newVideo.play();
+            this.newVideo.requestPictureInPicture()
+
+          })
+          document.body.prepend(this.newVideo);
+          this.render();
+        }
+        addDanmu(danmu,line) {
+          if (this.direction == 'left') danmu.x = this.cvs.width;
+          else danmu.x = -danmu.getTextWidth(this.ctx);
+          danmu.direction = this.direction;
+          danmu.size = this.size;
+          danmu.y = (line + 1) * (danmu.size + this.y_gap);
+          this.danmus.add(danmu);
+          this.lastDamuInlines[line] = danmu;
+
+        }
+
+
+        /**
+         * @param {CanvasRenderingContext2D} ctx
+         */
+        drawDanmu() {
+
+          this.danmus.forEach(danmu => {
+            danmu.move();
+            if (danmu.isInvisible(this.ctx)) {
+              console.log('弹幕看不见了')
+              this.danmus.delete(danmu);
+
+            }
+            this.ctx.fillStyle = danmu.color;
+            this.ctx.font = `${danmu.size}px sans-serif`;
+            this.ctx.fillText(danmu.text,danmu.x,danmu.y + danmu.size);
+          })
+
+          this.lastDamuInlines.forEach((lastDanmu,line) => {
+            if (lastDanmu == 0) {
+              const nextDanmu = this.waittingQueue.shift()
+              nextDanmu && this.addDanmu(nextDanmu,line);
+              return;
+            }
+            const textWidth = lastDanmu.getTextWidth(this.ctx);
+
+            if (this.direction == 'left') {
+              const x = lastDanmu.x + textWidth + this.x_gap;
+              if (x < this.cvs.width) {
+                const nextDanmu = this.waittingQueue.shift()
+                nextDanmu && this.addDanmu(nextDanmu,line);
+                return;
+              }
+            } else if (lastDanmu.x - this.x_gap > 0) {
+              const nextDanmu = this.waittingQueue.shift()
+              nextDanmu && this.addDanmu(nextDanmu,line);
+              return;
+            }
+
+
+
+
+
+          })
+
+
+        }
+        draw() {
+          this.ctx.clearRect(0,0,this.cvs.width,this.cvs.height);
+          this.ctx.drawImage(this.video,0,0,this.cvs.width,this.cvs.height);
+          this.drawDanmu();
+        }
+
+
+        render() {
+          this.draw();
+          requestAnimationFrame(() => this.render());
+        }
+      }
+
+
+
+
+
+
+      class Danmu {
+        constructor(options) {
+          this.text = options.text;
+          this.color = options.color;
+          this.size = options.size;
+          this.speed = options.speed;
+          this._textWidth = null;
+          this.x = options.x;
+          this.y = options.y + options.size;
+          this.direction = options.direction || 'left';
+        }
+        isInvisible(ctx) {
+          // console.log(this.x)
+          return this.direction == 'left' ? this.x < -  (this.getTextWidth(ctx)) : this.x > ctx.canvas.width;
+        }
+        move() {
+          this.direction == 'left' ? (this.x -= this.speed) : (this.x += this.speed);
+        }
+        getTextWidth(ctx) {
+          return this._textWidth ??= ctx.measureText(this.text).width;
+        }
+
+      }
+
+
+
+
+      function danmuDataGenerator(danmuContainerEl,cb) {
+        const ob = new MutationObserver((mutationsList,observer) => {
+          const arr = []
+          for (const mutation of mutationsList) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length) {
+              mutation.addedNodes.forEach(node => arr.push(new Danmu({
+                text: node.textContent,
+                color: 'red',
+                size: 20,
+                speed: 1,
+                x: 0,
+                y: 0
+              })));
+            }
+          }
+          cb(arr);
+        })
+
+        ob.observe(danmuContainerEl,{
+          childList: true,
+          // subtree: true
+        });
+      }
+      const video = document.querySelectorAll('video')[0]
+      const danmuContainerEl = document.querySelector('.danmu-6e95c1')
+
+      console.log('video',video)
+      console.log('danmuContainerEl',danmuContainerEl)
+      if (video && danmuContainerEl) {
+        const danmuSystem = new DanmuSystem({ video,direction: 'left' });
+        console.log('danmuSystem',danmuSystem)
+
+        danmuDataGenerator(danmuContainerEl,(data) => {
+          danmuSystem.waittingQueue.push(...data)
+        })
+      }
+
+
+
+
+
+
+
+
+    </script>
+  </body>
+
+</html>

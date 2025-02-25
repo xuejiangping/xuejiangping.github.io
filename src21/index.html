@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style/index.css">
+    <script defer src="./script/index.js"></script>
+    <title>浮生浪迹笑明月</title>
+  </head>
+
+  <body>
+    <h1>demo</h1>
+    <!-- <div class="cube"></div> -->
+    <video id="video" src="./assets/mov_bbb.mp4" controls></video>
+    <div><input type="range" name="" id="ipt"></div>
+    <hr>
+    <!-- <canvas id="cvs" width="400" height="400"></canvas> -->
+
+
+    <script>
+      const video = document.getElementById('video')
+      /**
+       * @param {HTMLVideoElement} video
+       */
+      function test(video) {
+        /**
+         * @type {HTMLCanvasElement}
+         */
+        const cvs = document.createElement('canvas');
+        cvs.width = video.videoWidth;
+        cvs.height = video.videoHeight;
+        cvs.style.border = '1px solid red';
+        document.body.appendChild(cvs);
+        const ctx = cvs.getContext('2d');
+
+        // ctx.fillText('hello',100,100);
+
+        const danmu1 = new Danmu({
+          x: cvs.width - 100,
+          y: 20,
+          text: 'hello',
+          color: 'red',
+          size: 20,
+          speed: 0.2,
+          ctx
+        });
+        const danmu2 = new Danmu({
+          x: cvs.width - 100,
+          y: 40,
+          text: 'world',
+          color: 'blue',
+          size: 20,
+          speed: 0.1,
+          ctx
+        });
+        const danmus = [
+          danmu1,danmu2
+        ];
+        console.log('danmu1',danmu1)
+        // danmu.move();
+        // danmu.draw(ctx);
+        // console.log('danmu',danmu)
+        function render() {
+          ctx.clearRect(0,0,cvs.width,cvs.height);
+          ctx.drawImage(video,0,0,cvs.width,cvs.height);
+
+          danmus.forEach(danmu => {
+            danmu.move();
+            danmu.draw();
+            console.log('danmu',danmu)
+          })
+          requestAnimationFrame(render);
+        }
+        const timer = setInterval(() => {
+          ctx.clearRect(0,0,cvs.width,cvs.height);
+          danmu1.move();
+          if (danmu1.isVisible()) {
+            console.log(ctx.measureText(this.text).width)
+
+            alert('不可见了')
+            clearInterval(timer);
+          }
+          danmu1.draw();
+
+        },10)
+        // render();
+
+
+
+      }
+
+
+
+
+
+
+      class Danmu {
+        constructor(options) {
+          this.x = options.x;
+          this.y = options.y + options.size;
+          this.text = options.text;
+          this.color = options.color;
+          this.size = options.size;
+          this.speed = options.speed;
+          this.ctx = options.ctx;
+
+          this.textWidth = this.ctx.measureText(this.text).width;
+        }
+        isVisible() {
+          // console.log(this.x)
+          return this.x < -this.textWidth;
+        }
+        move() {
+          this.x -= this.speed;
+        }
+        /**
+         * @param {CanvasRenderingContext2D} ctx
+         */
+        draw() {
+          // ctx.clearRect(this.x,this.y,this.text.length * this.size,-this.size);
+          // ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+          this.ctx.fillStyle = this.color;
+          this.ctx.font = `${this.size}px sans-serif`;
+          this.ctx.fillText(this.text,this.x,this.y);
+        }
+
+      }
+
+      video.addEventListener('loadedmetadata',() => {
+        test(video);
+      })
+    </script>
+  </body>
+
+</html>

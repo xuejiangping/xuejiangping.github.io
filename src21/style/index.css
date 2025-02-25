@@ -1,0 +1,30 @@
+.cube {
+
+  width: 100px;
+  height: 100px;
+  background-color: #000;
+  position: absolute;
+  /* top: 50%; */
+  /* left: 50%; */
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  animation: move 3s infinite linear;
+
+}
+
+@keyframes move {
+  0% {
+    /* transform: translateX(0%); */
+    left: 0%;
+  }
+
+  100% {
+    left: 100%;
+    /* transform: translateX(100%); */
+  }
+}
+
+#cvs {
+
+  border: 1px dashed;
+}

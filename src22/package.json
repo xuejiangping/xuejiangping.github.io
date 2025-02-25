@@ -1,0 +1,25 @@
+{
+  "name": "create-xuejp",
+  "version": "1.0.4",
+  "description": "使用npm create ,练习创建项目",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "create-xuejp": "bin/cli.js",
+    "xue": "bin/cli.js"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./dist": "./dist/demo.js"
+  },
+  "engines": {
+    "node": ">=12"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": " index.js",
+    "xue": "echo xuejiangping "
+  },
+  "author": "xuejiangping",
+  "license": "ISC"
+}

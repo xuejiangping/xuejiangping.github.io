@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mac Dock Animation</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+      }
+
+      #dock {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        gap: 2em;
+        padding: 1em;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .dock-item {
+        width: 50px;
+        height: 50px;
+        background-color: #007aff;
+        border-radius: 10px;
+        /* transition: transform 0.3s ease-out; */
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <h1 id="showText">demo</h1>
+    <div id="dock">
+      <div class="dock-item">demo1</div>
+      <div class="dock-item">demo2</div>
+      <div class="dock-item">demo3</div>
+      <div class="dock-item">demo4</div>
+      <div class="dock-item">demo5</div>
+      <div class="dock-item">demo6</div>
+      <div class="dock-item">demo7</div>
+      <div class="dock-item">demo8</div>
+      <div class="dock-item">demo9</div>
+      <div class="dock-item">demo10</div>
+    </div>
+
+    <script>
+      const dock = document.getElementById('dock');
+      const items = document.querySelectorAll('.dock-item');
+      const showText = document.getElementById('showText');
+      // console.log(items)
+      dock.addEventListener('mousemove',(e) => {
+
+        const rect = dock.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        items.forEach(item => {
+          const itemX = item.offsetLeft + item.offsetWidth / 2;
+
+          const distance = Math.abs(mouseX - itemX);
+          // console.log('itemX',itemX)
+          // console.log('mouseX',mouseX)
+          // console.log('distance',distance)
+          const scale = Math.max(1,1.5 - distance / 300);
+          // debugger
+          item.style.transform = `scale(${scale}) translateY(${-(scale - 1) * 80}px)`;
+        });
+      });
+
+      dock.addEventListener('mouseleave',() => {
+        items.forEach(item => {
+          item.style.transform = 'scale(1) translateY(0)';
+        });
+      });
+
+      dock.addEventListener('click',(e) => {
+        /**@type {HTMLDivElement} */
+        const el = e.srcElement
+        el.classList.contains('dock-item') && (showText.innerText = el.innerText)
+      });
+
+
+
+
+
+    </script>
+  </body>
+
+</html>
