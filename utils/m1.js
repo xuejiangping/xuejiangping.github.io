@@ -99,7 +99,7 @@
         domEl.removeEventListener('mousemove',_mouseMoveHandler)
         domEl.removeEventListener('mouseup',_mouseUpHandler)
       }
-
+      origin
       domEl.addEventListener('mousedown',_mousedownHandler)
       return () => domEl.removeEventListener('mousedown',_mousedownHandler)
     }
