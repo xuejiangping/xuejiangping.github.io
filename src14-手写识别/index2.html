@@ -32,6 +32,8 @@
         // });
 
         console.log('可以检测了')
+
+        //识别地址图片
         window.detect = function detect(url) {
           img.onload = function () {
             model.detect(img).then(predictions => {

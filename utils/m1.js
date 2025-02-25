@@ -45,6 +45,7 @@
         console.log('未找到元素',selectors)
       }
     })(global.document,global.frames);
+
     // 记录日志
     const log = (...msg) => console.log(`[${new Date().toLocaleTimeString()}]:`,...msg)
     // 睡眠
@@ -77,11 +78,36 @@
       }
       return pars
     }
+    // ============
+    function watchMouseOnDOM(domEl,{
+      mousedownHandler = ({ x,y }) => console.log('mousedownHandler',x,y),
+      mouseMoveHandler = ({ x,y }) => console.log('mouseMoveHandler',x,y),
+      mouseUpHandler = ({ x,y }) => console.log('mouseUpHandler',x,y),
+    } = {}) {
+
+      const _mousedownHandler = ({ offsetX: x,offsetY: y }) => {
+        mousedownHandler({ x,y })
+
+        //===============================================================
+        domEl.addEventListener('mousemove',_mouseMoveHandler)
+        domEl.addEventListener('mouseup',_mouseUpHandler)
+      }
+      const _mouseMoveHandler = ({ offsetX: x,offsetY: y }) => mouseMoveHandler({ x,y })
+
+      const _mouseUpHandler = ({ offsetX: x,offsetY: y }) => {
+        mouseUpHandler({ x,y })
+        domEl.removeEventListener('mousemove',_mouseMoveHandler)
+        domEl.removeEventListener('mouseup',_mouseUpHandler)
+      }
+
+      domEl.addEventListener('mousedown',_mousedownHandler)
+      return () => domEl.removeEventListener('mousedown',_mousedownHandler)
+    }
 
 
 
     return {
-      findElement,log,asleep,hash,traverseDom
+      findElement,log,asleep,hash,traverseDom,watchMouseOnDOM
     }
 
   }))

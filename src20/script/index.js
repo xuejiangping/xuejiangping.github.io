@@ -1,12 +1,9 @@
-class GraphAdjMat {
-    vertices;
-    adjMat;
-    constructor(vertices, edges) {
-        this.vertices = [];
-        this.adjMat = [];
-    }
-    addVertex(val) {
-    }
-    addEdge(i, j) {
-    }
-}
+const sharedWorker = new SharedWorker('script/myworker.js');
+const port = sharedWorker.port;
+
+port.onmessage = function (event) {
+    console.log('Received from shared worker in main1:',event.data);
+};
+
+port.postMessage('Hello SharedWorker from main1');
+

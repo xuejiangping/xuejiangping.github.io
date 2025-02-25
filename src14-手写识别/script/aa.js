@@ -1,7 +1,8 @@
 
+console.log('111',111)
+
 import * as tf from '@tensorflow/tfjs'
 window.tf = tf
-
 // 创建数据
 const IMAGES_SPRITE_PATH = '../assets/mnist_images.png'
 const LABELS_PATH = '../assets/mnist_labels_uint8'

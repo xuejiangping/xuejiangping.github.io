@@ -1,6 +1,7 @@
 body {
   height: 100vh;
 }
+
 .container1 {
   columns: 3;
   border: 10px solid pink;
@@ -9,10 +10,12 @@ body {
   margin: auto;
   gap: 3em;
 }
+
 .container1 .item {
   display: block;
   border: 1px solid;
 }
+
 .container {
   display: flex;
   gap: 20px 10px;
@@ -21,6 +24,7 @@ body {
   border: 10px solid pink;
   justify-content: space-evenly;
 }
+
 .container .item {
   flex: 1 1 200px;
   border: 1px solid;
@@ -28,4 +32,9 @@ body {
   width: 200px;
   align-self: center;
   text-align: center;
+}
+
+::highlight(abc) {
+  background-color: yellow;
+  color: black;
 }
