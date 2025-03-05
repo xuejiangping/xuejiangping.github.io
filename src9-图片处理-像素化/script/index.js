@@ -87,6 +87,7 @@ class Demo {
 }
 let url = 'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fc-ssl.duitang.com%2Fuploads%2Fitem%2F202003%2F09%2F20200309182825_klfkx.png&refer=http%3A%2F%2Fc-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1675315514&t=1437419da8381d4669015fd8ce31db9a'
 const demo = window.demo = new Demo(cvs)
+console.log('demo',demo)
 let img = new Image()
 img.crossOrigin = true
 img.src = url
