@@ -254,7 +254,11 @@ class Renderer {
     } else if (newEndIdx < newStartIdx && oldStartInx <= oldEndIdx) {
       for (let i = oldStartInx; i <= oldEndIdx; i++) this.unmount(oldChildren[i])
     }
-
+    if (newLen > oldLen) {
+      for (let i = commonLen; i < newLen; i++) this.patch(null,newChildren[i],container)
+    } else {
+      for (let i = commonLen; i < oldLen; i++) this.unmount(oldChildren[i])
+    }
   }
 
   /**

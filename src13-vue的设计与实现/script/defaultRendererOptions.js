@@ -80,6 +80,7 @@ export default {
   },
   createComment: (text) => new Comment(text),
   setComment: (node,text) => node.nodeValue = text,
+  setComment: (node,text) => node.nodeValue = text,
   insert: (el,parent,anchor = null) => parent.insertBefore(el,anchor),
   removeElement(vNode) {
     const el = vNode.el,parent = el?.parentElement
