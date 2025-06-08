@@ -1,12 +1,14 @@
 const { WriteStream,createWriteStream,readFileSync } = require("fs")
+const { transformReq } = require('./utils/index.js')
+
+
+
 const Server = {
   http: require('http'),
   https: require('https')
 }
 
 const WS = require('ws').Server
-const { parse: parseURL } = require("url");
-const { proxy,onSaveHook,baike,uploadFile,danmu,shiqu } = require("./route/index");
 const path = require("path");
 const host = 'localhost'
 const port = 8081
@@ -18,29 +20,8 @@ const options = {
 }
 
 
-// 广播
-function broadcast(msg) {
-  ws.clients.forEach(cne => cne.sendText(msg))
-}
 
 
-
-
-const router = {
-  '/baike': baike,
-  '/proxy': proxy,
-  '/onSaveHook': (req,res) => onSaveHook(req,res,broadcast),
-  '/uploadFile': uploadFile,
-  '/danmu': danmu,
-  '/test': (req,res) => {
-    res.end('999')
-    console.log(req.method)
-    let str = ''
-    req.on('data',ck => str += ck)
-    req.on('end',() => console.log(str))
-  },
-  '/shiqu': shiqu
-}
 
 
 
@@ -52,15 +33,8 @@ function create_http_server() {
     res.setHeader('Access-Control-Allow-Headers','*')
   }).listen(port,host,() => console.log(`服务器启动成功: ${protocol}://${host}:${port}`))
     .on('request',(req,res) => {
-      const { pathname,query } = parseURL(req.url)
-      req.query = new URLSearchParams(query)
-      if (router.hasOwnProperty(pathname)) {
-        console.log(pathname)
-        router[pathname](req,res)
-      } else {
-        res.writeHead(404,{ 'Content-Type': 'text/html' })
-          .end('<h1>~~~~~~~~ 404 NOT FOUND ~~~~~~~~~~</h1>')
-      }
+      const { searchParams,pathname } = new URL(req.url,`${protocol}://${host}:${port}`)
+      Object.assign(req,{ pathname,searchParams },transformReq)
     })
 
   return app
@@ -90,6 +64,4 @@ function broadcast(ws) {
 const app = create_http_server()
 const ws_app = create_ws_server(app)
 
-setInterval(() => {
-  broadcast(ws_app)
-},3000);
+module.exports = { app,ws_app }
