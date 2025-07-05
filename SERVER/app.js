@@ -10,6 +10,7 @@ const Server = {
 
 const WS = require('ws').Server
 const path = require("path");
+const { IncomingMessage,ServerResponse } = require("http");
 const host = 'localhost'
 const port = 8081
 const protocol = 'http'
@@ -18,12 +19,19 @@ const options = {
   cert: readFileSync(path.join(__dirname,'./cert/cert.pem')),
   key: readFileSync(path.join(__dirname,'./cert/key.pem'))
 }
+Object.assign(IncomingMessage.prototype,transformReq)
+
+process.on('uncaughtException',(err) => {
+  console.error('未捕获的异常:',err);
+  // 记录日志或发送告警，但不要直接退出进程
+});
+process.on('unhandledRejection',(reason,promise) => {
+  console.error('未处理的 Promise rejection:',reason);
+  // 记录日志或发送告警
+});
 
 
-
-
-
-
+// Object.assign(ServerResponse.prototype,transformReq)
 
 function create_http_server() {
   // 创建服务器
@@ -34,33 +42,41 @@ function create_http_server() {
   }).listen(port,host,() => console.log(`服务器启动成功: ${protocol}://${host}:${port}`))
     .on('request',(req,res) => {
       const { searchParams,pathname } = new URL(req.url,`${protocol}://${host}:${port}`)
-      Object.assign(req,{ pathname,searchParams },transformReq)
+      Object.assign(req,{ pathname,searchParams })
+      res.req
+    }).on('error',(err) => {
+      console.error('服务器出错：',err)
     })
 
   return app
 }
 
 
-
+function broadcast(ws,data) {
+  ws.clients.forEach(client => {
+    client.send(data)
+  })
+}
 
 
 function create_ws_server(app) {
   // web-socket 服务
   const ws = new WS({ server: app }).on('listening',() => {
     console.log('web-socket 服务启动：',`${ws_protocol}://${host}:${port}`)
-  }).on('connection',(cne) => {
-    cne.onerror = err => console.log('发生错误: ',err.message)
+  });
+  ws.on('connection',(cne) => {
+    cne.onerror = (err) => console.log('发生错误: ',err.message)
     console.log('当前连接数量：',ws.clients.size)
+    cne.onclose = (e) => console.log('关闭连接: ',e.code,e.reason)
+    broadcast(ws,'新连接！')
   })
+  ws.on('error',(err) => broadcast(ws,'服务端发生错误！'))
+  ws.on('close',err => broadcast(ws,'服务端已关闭! '))
+
   return ws
-
 }
 
-function broadcast(ws) {
-  ws.clients.forEach(client => {
-    client.send(JSON.stringify({ msg: new Date().toLocaleString() }))
-  })
-}
+
 const app = create_http_server()
 const ws_app = create_ws_server(app)
 

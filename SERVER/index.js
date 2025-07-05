@@ -1,7 +1,5 @@
 const { app,ws_app } = require('./app.js')
-const router = require('./router/index.js')
+const { http_router,ws_router } = require('./router/index.js')
 require('./routes/index.js')
-
-router.init(app)
-
-
+http_router.init({ app })
+ws_router.init({ app: ws_app,basePath: '/ws' })

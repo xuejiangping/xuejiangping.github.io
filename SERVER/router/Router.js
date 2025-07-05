@@ -1,7 +1,9 @@
 /**
  * @typedef {'post'|'get'}  Method
- * @typedef {IncomingMessage&{pathname:string,searchParams:URLSearchParams}&import('../utils/index.js').TansformReq  }Req
- * @typedef {(req:Req,res:ServerResponse&{req:Req})=>void } Listener
+ * @typedef {import('../utils/index.js').TansformReq } TansformReq
+ * @typedef {IncomingMessage&{pathname:string,searchParams:URLSearchParams}&TansformReq}Req
+ * @typedef {ServerResponse&TansformReq }Res
+ * @typedef {(req:Req,res:Res)=>void } Listener
  * @typedef {Map<string,Map<Method,Set<Listener>>>} Rules
  * @typedef {import('http').Server} Server
  */
@@ -11,36 +13,53 @@ const { ServerResponse,IncomingMessage } = require('http')
 
 class Router {
 
+  /**@type {Server} */
+  _app = null
+  _basePath = ''
+  /**@type {Rules} */
+  _rules = new Map()
 
   /**
    * 
-   * @param {Server} app 
+   * @param {{app:Server,basePath:string}} options 
    */
-  init(app) {
+  init({ app,basePath }) {
+    if (!app) throw new Error('app is invalid')
     this._app = app
-    this._app.on('request',(/**@type  {Req} */req,/**@type {ServerResponse}*/res) => {
+    this._basePath = basePath
 
-      const { method,pathname,searchParams } = req
+
+
+    app.on('request',async (/**@type  {Req} */req,/**@type {ServerResponse}*/res) => {
+      const { method,pathname } = req
 
       const listeners = this._rules.get(pathname)?.get(method)
       if (listeners?.size) {
         try {
-          listeners.forEach(listener => listener(req,res))
+          this.runListener(listeners,req,res)
+          // listeners.forEach(listener => listener(req,res))
         } catch (error) {
           console.error('路由逻辑执行错误：',error)
           res.writeHead(500,'error').end(`<h1>500  server error</h1><h2>${error}</h2>`)
         }
       } else {
         res.statusCode = 404
+        res.setHeader('Content-Type','text/html;charset=utf-8')
         res.end('<h1>404  not found</h1>')
       }
 
     })
   }
 
+  async runListener(listeners,req,res) {
+    const taskList = Array.from(listeners).map(listener => {
+      return () => new Promise(next => listener(req,res,next))
+    })
+    for (let task of taskList) {
+      await task()
+    }
 
-  /**@type {Rules} */
-  _rules = new Map()
+  }
 
   /**
  * @param {string} path
@@ -48,6 +67,7 @@ class Router {
  * @param {Listener} listener 
  */
   addRule(path,method,listener) {
+    if (this._basePath) path = this._basePath + path
     method = method.toUpperCase()
     if (!this._rules.has(path)) this._rules.set(path,new Map())
     if (!this._rules.get(path).has(method)) this._rules.get(path).set(method,new Set())
@@ -56,20 +76,35 @@ class Router {
   }
   /**
    * 
+   * @param {'get'|'post'} method 
    * @param {string} path 
-   * @param {Listener} listener 
+   * @returns 
    */
-  get(path,listener) {
-    this.addRule(path,'get',listener)
+  map(method,path) {
+    return (t,p) => {
+      if (typeof t[p] === 'function') this.addRule(path,method,t[p])
+      else throw new Error(`${p} is not a function`)
+    }
   }
   /**
    * 
    * @param {string} path 
    * @param {Listener} listener 
    */
-  post(path,listener) {
-    this.addRule(path,'post',listener)
+  get(path) {
+    return this.map('get',path)
+
   }
+  /**
+   * 
+   * @param {string} path 
+   * @param {Listener} listener 
+   */
+  post(path) {
+    return this.map('post',path)
+  }
+
+
 
 }
 
