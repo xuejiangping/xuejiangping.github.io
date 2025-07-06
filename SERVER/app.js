@@ -11,7 +11,9 @@ const Server = {
 const WS = require('ws').Server
 const path = require("path");
 const { IncomingMessage,ServerResponse } = require("http");
-const host = 'localhost'
+// const host = 'localhost'
+const host = '0.0.0.0'
+
 const port = 8081
 const protocol = 'http'
 const ws_protocol = protocol === 'http' ? 'ws' : 'wss'

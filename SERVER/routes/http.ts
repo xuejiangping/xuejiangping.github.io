@@ -140,10 +140,10 @@ class HttpRoutesHandler {
   @router.get('/execCMD')
   execCMD(req: Req, res: Res) {
     const cmd = req.searchParams.get('cmd')
-    if (!cmd) return
+    if (!cmd) return res.end('<h1>cmd is invalid</h1>')
     exec(cmd, { encoding: 'buffer' }, (err, stdout, stderr) => {
       const str = new TextDecoder('gbk').decode(new Uint8Array(err ? stderr : stdout))
-      res.end(str)
+      res.end(`<pre>${str}</pre>`)
 
     })
 
@@ -152,29 +152,28 @@ class HttpRoutesHandler {
   @router.post('/execCMD')
   async execCMDP(req: Req, res: Res) {
     const cmd = await req.text()
+    if (!cmd) return res.end('<h1>cmd is invalid</h1>')
     exec(cmd, { encoding: 'buffer' }, (err, stdout, stderr) => {
       const str = new TextDecoder('gbk').decode(new Uint8Array(stdout.length ? stdout : stderr))
-      res.end(str)
+      res.end(`<pre>${str}</pre>`)
 
     })
 
     // res.end('execCMD')
   }
   @router.map('post', '/test')
-  test(req: Req, res: Res, next: any) {
-    console.log('req._readed', req._readed)
-
-    req.text().then(str => {
-      console.log('post', str)
-      next()
-    })
+  async test(req: Req, res: Res) {
+    const str = await req.text();
+    console.log('post', str);
     // res.end('post 999')
   }
+
+
   @router.map('post', '/test')
   test2(req: Req, res: Res) {
-
-    console.log('req._readed', req._readed)
     req.text().then(str => console.log('post', str))
     res.end('post 9992')
   }
+
 }
+

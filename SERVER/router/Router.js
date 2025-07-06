@@ -18,6 +18,7 @@ class Router {
   _basePath = ''
   /**@type {Rules} */
   _rules = new Map()
+  staticFileDir = null
 
   /**
    * 
@@ -37,7 +38,6 @@ class Router {
       if (listeners?.size) {
         try {
           this.runListener(listeners,req,res)
-          // listeners.forEach(listener => listener(req,res))
         } catch (error) {
           console.error('路由逻辑执行错误：',error)
           res.writeHead(500,'error').end(`<h1>500  server error</h1><h2>${error}</h2>`)
@@ -52,9 +52,7 @@ class Router {
   }
 
   async runListener(listeners,req,res) {
-    const taskList = Array.from(listeners).map(listener => {
-      return () => new Promise(next => listener(req,res,next))
-    })
+    const taskList = Array.from(listeners).map(listener => () => listener(req,res))
     for (let task of taskList) {
       await task()
     }
@@ -107,5 +105,9 @@ class Router {
 
 
 }
+
+
+
+
 
 module.exports = Router
