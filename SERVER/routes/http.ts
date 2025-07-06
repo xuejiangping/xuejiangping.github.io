@@ -1,8 +1,9 @@
 // const { http_router: router } = require('../router/index.js')
 import { exec } from 'child_process';
+import fs from 'fs';
+import { } from 'fs/promises';
 import { http_router as router } from '../router/index.js';
 import { Req, Res } from '../router/Router.js';
-const fs = require('fs/promises')
 
 const path = require('path')
 const cheerio = require('cheerio');
@@ -134,7 +135,7 @@ const decoder = new TextDecoder()
 
 // })
 
-class HttpRoutesHandler {
+class HttpRequestController {
 
 
   @router.get('/execCMD')
@@ -177,3 +178,23 @@ class HttpRoutesHandler {
 
 }
 
+class StaticFileController {
+
+  @router.map('get', '/static/*')
+  staticFile(req: Req, res: Res) {
+    const filePath = path.join(router.staticFileDir, req.pathname.replace('/static', ''))
+    if (fs.existsSync(filePath)) {
+      const fileStream = fs.createReadStream(filePath).pipe(res)
+      // 错误处理（避免进程崩溃）
+      fileStream.on('error', (err) => {
+        console.error('文件读取错误:', err);
+        res.statusCode = 500;
+        res.end('文件读取错误,服务器错误');
+      });
+    } else {
+      res.end(`${filePath} 文件不存在`)
+
+    }
+
+  }
+}

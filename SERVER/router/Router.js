@@ -18,23 +18,27 @@ class Router {
   _basePath = ''
   /**@type {Rules} */
   _rules = new Map()
-  staticFileDir = null
+  staticFileDir = ''
+
 
   /**
    * 
    * @param {{app:Server,basePath:string}} options 
    */
-  init({ app,basePath }) {
+  init({ app,basePath,staticFileDir }) {
     if (!app) throw new Error('app is invalid')
     this._app = app
     this._basePath = basePath
-
+    this._request_handler = this._http_handler
+    this.staticFileDir = staticFileDir
 
 
     app.on('request',async (/**@type  {Req} */req,/**@type {ServerResponse}*/res) => {
       const { method,pathname } = req
-
-      const listeners = this._rules.get(pathname)?.get(method)
+      const listeners = (this.staticFileDir && (pathname == '/static' || pathname.startsWith('/static/')))
+        ? this._rules.get('/static/*')?.get(method)
+        : this._rules.get(pathname)?.get(method)
+      debugger
       if (listeners?.size) {
         try {
           this.runListener(listeners,req,res)
@@ -47,7 +51,6 @@ class Router {
         res.setHeader('Content-Type','text/html;charset=utf-8')
         res.end('<h1>404  not found</h1>')
       }
-
     })
   }
 
