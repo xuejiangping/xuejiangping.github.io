@@ -146,7 +146,6 @@ class ChildProcessApp {
     this.app = spawn(app, args, { stdio: ['pipe', 'pipe', 'pipe'], ...options })
   }
   execCMD(cmdStr: string) {
-    cmdStr = cmdStr.trim()
     return new Promise<Readable>((res, rej) => {
       if (!this.app || !cmdStr) return rej('no app or or cmdStr')
       const readableStream = this.createReadableStream()
@@ -196,8 +195,9 @@ class HttpRoutesHandler {
 
   @router.get('/execCMD')
   execCMD(req: Req, res: Res) {
-    const cmd = req.searchParams.get('cmd')
+    const cmd = req.searchParams.get('cmd')?.trim()
     if (!cmd) return
+
     exec(cmd, { encoding: 'buffer' }, (err, stdout, stderr) => {
       const str = new TextDecoder('gbk').decode(new Uint8Array(err ? stderr : stdout))
       res.end(str)
@@ -209,11 +209,15 @@ class HttpRoutesHandler {
   @router.post('/execCMD')
   async execCMDP(req: Req, res: Res) {
     try {
-      const cmdStr = await req.text()
+      let cmdStr = (await req.text()).trim()
+      if (!cmdStr) throw new Error('cmdStr is empty')
+      cmdStr += '| Out-String'
       const readableStream = await HttpRoutesHandler.cp.execCMD(cmdStr)
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=gbk' })
       readableStream.pipe(res)
     } catch (error) {
-      res.end(error)
+      if (error instanceof Error) res.end(error.message)
+      else res.end(error)
     }
   }
   @router.map('post', '/test')
