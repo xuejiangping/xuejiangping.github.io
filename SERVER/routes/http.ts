@@ -213,7 +213,7 @@ class HttpRequestController {
       let cmdStr = (await req.text()).trim()
       if (!cmdStr) throw new Error('cmdStr is empty')
       cmdStr += '| Out-String'
-      const readableStream = await HttpRoutesHandler.cp.execCMD(cmdStr)
+      const readableStream = await HttpRequestController.cp.execCMD(cmdStr)
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=gbk' })
       readableStream.pipe(res)
     } catch (error) {
