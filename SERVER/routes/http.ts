@@ -1,12 +1,13 @@
 // const { http_router: router } = require('../router/index.js')
-import { exec } from 'child_process';
+import { ChildProcessWithoutNullStreams, exec, spawn } from 'child_process';
 import fs from 'fs';
 import { } from 'fs/promises';
+import { Readable } from 'stream';
 import { http_router as router } from '../router/index.js';
-import { Req, Res } from '../router/Router.js';
+import type { Req, Res } from '../router/Router.js';
 
 const path = require('path')
-const cheerio = require('cheerio');
+// const cheerio = require('cheerio');
 
 // const { TextDecoder } = require("util");
 // const soundHound = require('../../../../网易云/NeteaseCloudMusic-Audio-Recognize/index.js')
@@ -135,13 +136,69 @@ const decoder = new TextDecoder()
 
 // })
 
+
+
+class ChildProcessApp {
+
+
+  app: ChildProcessWithoutNullStreams | null = null
+
+  constructor({ app = 'pwsh', args = [], options = {} }: { app: string, args: string[], options: object }) {
+    this.app = spawn(app, args, { stdio: ['pipe', 'pipe', 'pipe'], ...options })
+  }
+  execCMD(cmdStr: string) {
+    return new Promise<Readable>((res, rej) => {
+      if (!this.app || !cmdStr) return rej('no app or or cmdStr')
+      const readableStream = this.createReadableStream()
+      this.app.stdin.write(`${cmdStr}\n`, err => {
+        if (err) {
+          rej(err)
+          readableStream.destroy()
+        } else {
+          res(readableStream)
+        }
+      })
+    })
+  }
+
+  createReadableStream() {
+    const _this = this
+    return new Readable({
+      read() {
+        _this.app!.stdout.once('data', (data: Buffer) => {
+          if (data.toString().startsWith('PS ')) {
+            this.push(null)
+          }
+          else this.push(data)
+        })
+      }
+    })
+  }
+
+}
+
+
+
+
+
+
+
 class HttpRequestController {
+
+  static cp = new ChildProcessApp({
+    app: 'pwsh',
+    args: [],
+    options: {
+      cwd: 'C:\\Users\\11275\\Desktop'
+    }
+  })
 
 
   @router.get('/execCMD')
   execCMD(req: Req, res: Res) {
-    const cmd = req.searchParams.get('cmd')
-    if (!cmd) return res.end('<h1>cmd is invalid</h1>')
+    const cmd = req.searchParams.get('cmd')?.trim()
+    if (!cmd) return
+
     exec(cmd, { encoding: 'buffer' }, (err, stdout, stderr) => {
       const str = new TextDecoder('gbk').decode(new Uint8Array(err ? stderr : stdout))
       res.end(`<pre>${str}</pre>`)
@@ -152,15 +209,17 @@ class HttpRequestController {
   }
   @router.post('/execCMD')
   async execCMDP(req: Req, res: Res) {
-    const cmd = await req.text()
-    if (!cmd) return res.end('<h1>cmd is invalid</h1>')
-    exec(cmd, { encoding: 'buffer' }, (err, stdout, stderr) => {
-      const str = new TextDecoder('gbk').decode(new Uint8Array(stdout.length ? stdout : stderr))
-      res.end(`<pre>${str}</pre>`)
-
-    })
-
-    // res.end('execCMD')
+    try {
+      let cmdStr = (await req.text()).trim()
+      if (!cmdStr) throw new Error('cmdStr is empty')
+      cmdStr += '| Out-String'
+      const readableStream = await HttpRoutesHandler.cp.execCMD(cmdStr)
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=gbk' })
+      readableStream.pipe(res)
+    } catch (error) {
+      if (error instanceof Error) res.end(error.message)
+      else res.end(error)
+    }
   }
   @router.map('post', '/test')
   async test(req: Req, res: Res) {
@@ -198,3 +257,6 @@ class StaticFileController {
 
   }
 }
+
+
+

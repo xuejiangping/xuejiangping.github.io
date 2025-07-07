@@ -11,9 +11,7 @@ const Server = {
 const WS = require('ws').Server
 const path = require("path");
 const { IncomingMessage,ServerResponse } = require("http");
-// const host = 'localhost'
 const host = '0.0.0.0'
-
 const port = 8081
 const protocol = 'http'
 const ws_protocol = protocol === 'http' ? 'ws' : 'wss'
@@ -45,7 +43,6 @@ function create_http_server() {
     .on('request',(req,res) => {
       const { searchParams,pathname } = new URL(req.url,`${protocol}://${host}:${port}`)
       Object.assign(req,{ pathname,searchParams })
-      res.req
     }).on('error',(err) => {
       console.error('服务器出错：',err)
     })

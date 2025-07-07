@@ -9,5 +9,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^24.0.10"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
 }
