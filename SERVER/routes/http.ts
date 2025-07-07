@@ -1,5 +1,5 @@
 // const { http_router: router } = require('../router/index.js')
-import { ChildProcessWithoutNullStreams, exec, spawn } from 'child_process';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import fs from 'fs';
 import { } from 'fs/promises';
 import { Readable } from 'stream';
@@ -189,29 +189,22 @@ class HttpRequestController {
     app: 'pwsh',
     args: [],
     options: {
-      cwd: 'C:\\Users\\11275\\Desktop'
+      // cwd: '%desktop%'
     }
   })
 
 
+
   @router.get('/execCMD')
-  execCMD(req: Req, res: Res) {
-    const cmd = req.searchParams.get('cmd')?.trim()
-    if (!cmd) return
-
-    exec(cmd, { encoding: 'buffer' }, (err, stdout, stderr) => {
-      const str = new TextDecoder('gbk').decode(new Uint8Array(err ? stderr : stdout))
-      res.end(`<pre>${str}</pre>`)
-
-    })
-
-    // res.end('execCMD')
-  }
   @router.post('/execCMD')
   async execCMDP(req: Req, res: Res) {
     try {
-      let cmdStr = (await req.text()).trim()
+      let cmdStr
+      if (req.method == 'GET') cmdStr = req.searchParams.get('cmd')
+      else cmdStr = await req.text()
+      cmdStr = cmdStr?.trim()
       if (!cmdStr) throw new Error('cmdStr is empty')
+      console.log('cmdStr', cmdStr)
       cmdStr += '| Out-String'
       const readableStream = await HttpRequestController.cp.execCMD(cmdStr)
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=gbk' })
