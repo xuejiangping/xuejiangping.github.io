@@ -238,22 +238,24 @@ class HttpRequestController {
 class StaticFileController {
 
   static handleFile(res: Res, filePath: string) {
-    const type = mime.lookup(filePath);
-    res.writeHead(200, { 'Content-Type': type ? type : 'application/octet-stream' });
-    const fileStream = createReadStream(filePath).pipe(res)
+    const type = mime.lookup(filePath) || 'application/octet-stream';
+    const charset = mime.charsets.lookup(type);
+    const fileStream = createReadStream(filePath)
+    const { promise, reject } = Promise.withResolvers()
     // 错误处理（避免进程崩溃）
-    fileStream.on('error', (err) => {
-      console.error('文件读取错误:', err);
-      res.statusCode = 500;
-      res.end('文件读取错误,服务器错误');
-    });
+    fileStream.on('error', reject)
+    fileStream.on('open', () => {
+      res.writeHead(200, { 'Content-Type': `${type}${charset ? `; charset=${charset}` : ''}` });
+      fileStream.pipe(res)
+    })
+    return promise
   }
 
   static generateDirHtml(list: Dirent<string>[], pathname: string) {
     // path.relative(router.staticFileDir)
     const backItem = { name: '..', isFile: () => false, isDirectory: () => true }
     if (pathname != router.STATIC_PATH_PEFIX) list.unshift(backItem as Dirent<string>)
-    console.log('pathname', pathname)
+    // console.log('pathname', pathname)
     return `<table style="width:400px">${list.map(item =>
       ` <tr><td style="width:100px">${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}</td>  <td><a target="_self"
       href="${path.join(pathname, item.name)}">${item.name == '..' ? '返回上一级' : item.name}</a></td>
@@ -269,6 +271,7 @@ class StaticFileController {
 
   @router.map('get', router.STATIC_PATH_PEFIX)
   static staticFile(req: Req, res: Res) {
+
     const relativePath = path.relative(router.STATIC_PATH_PEFIX, req.pathname)
     const filePath = path.join(router.staticFileDir, relativePath)
     // console.log('filePath', filePath)
@@ -276,8 +279,9 @@ class StaticFileController {
 
     if (existsSync(filePath)) {
       const state = statSync(filePath)
-      if (state.isDirectory()) this.handleDir(res, filePath, req.pathname)
-      else this.handleFile(res, filePath)
+      if (state.isDirectory()) return this.handleDir(res, filePath, req.pathname)
+      else return this.handleFile(res, filePath)
+
 
     } else {
       res.end(`${filePath} 不存在`)

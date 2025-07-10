@@ -43,11 +43,12 @@ class Router {
       // debugger
       if (listeners?.size) {
         try {
-          this.runListener(listeners,req,res)
+          await this.runListener(listeners,req,res)
         } catch (error) {
-          console.error('路由逻辑执行错误：',error)
+          console.error('出错了： ',error)
           res.writeHead(500,'error').end(`<h1>500  server error</h1><h2>${error}</h2>`)
         }
+
       } else {
         res.statusCode = 404
         res.setHeader('Content-Type','text/html;charset=utf-8')

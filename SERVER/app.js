@@ -41,6 +41,10 @@ function create_http_server() {
     res.setHeader('Access-Control-Allow-Headers','*')
   }).listen(port,host,() => console.log(`服务器启动成功: ${protocol}://${host}:${port}`))
     .on('request',(req,res) => {
+      if (req.url.endsWith('/')) {
+        res.writeHead(301,{ Location: req.url.replace(/\/$/,'') })
+        res.end()
+      }
       req.url = decodeURI(req.url)
       // console.log('req.url',req.url,decodeURI(req.url))
       const { searchParams,pathname } = new URL(req.url,`${protocol}://${host}:${port}`)
