@@ -7,6 +7,7 @@ import { Readable } from 'stream';
 import { http_router as router } from '../router/index.js';
 import type { Req, Res } from '../router/Router.js';
 
+import mime from 'mime-types';
 import path from 'path';
 // const cheerio = require('cheerio');
 
@@ -21,7 +22,6 @@ const decoder = new TextDecoder()
 //     let buffer = Buffer.concat(ckArr)
 //     console.log('ckArr', ckArr)
 //     console.log('buffer', buffer)
-
 //     // soundHound(buffer).then(val => {
 //     //   let data = val.data.data?.result[0]
 //     //   res.end(data)
@@ -238,7 +238,8 @@ class HttpRequestController {
 class StaticFileController {
 
   static handleFile(res: Res, filePath: string) {
-    // res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'content-disposition': `attachment; filename=${path.basename(filePath)}` })
+    const type = mime.lookup(filePath);
+    res.writeHead(200, { 'Content-Type': type ? type : 'application/octet-stream' });
     const fileStream = createReadStream(filePath).pipe(res)
     // 错误处理（避免进程崩溃）
     fileStream.on('error', (err) => {
@@ -250,13 +251,15 @@ class StaticFileController {
 
   static generateDirHtml(list: Dirent<string>[], pathname: string) {
     // path.relative(router.staticFileDir)
-    return `<ul>${list.map(item =>
-      ` <li>
-      ${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}:  <a target="_self" 
-      href="${path.join(pathname, item.name)}">${item.name}</a>
-      </li>`
+    const backItem = { name: '..', isFile: () => false, isDirectory: () => true }
+    if (pathname != router.STATIC_PATH_PEFIX) list.unshift(backItem as Dirent<string>)
+    console.log('pathname', pathname)
+    return `<table style="width:400px">${list.map(item =>
+      ` <tr><td style="width:100px">${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}</td>  <td><a target="_self"
+      href="${path.join(pathname, item.name)}">${item.name == '..' ? '返回上一级' : item.name}</a></td>
+      </tr>`
     ).join('')
-      }</ul>`
+      }</table>`
   }
   static async handleDir(res: Res, filePath: string, pathname: string) {
     const list = await readdir(filePath, { 'withFileTypes': true })

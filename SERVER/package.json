@@ -11,9 +11,11 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^24.0.10"
   },
   "dependencies": {
+    "mime-types": "^3.0.1",
     "ws": "^8.18.3"
   }
 }
