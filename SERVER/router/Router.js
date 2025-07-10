@@ -38,7 +38,7 @@ class Router {
       // console.log('pathname',pathname)
       const listeners =
         (this.staticFileDir && (pathname == this.STATIC_PATH_PEFIX || pathname.startsWith(this.STATIC_PATH_PEFIX + '/')))
-          ? this._rules.get(`${this.STATIC_PATH_PEFIX}/*`)?.get(method)
+          ? this._rules.get(this.STATIC_PATH_PEFIX)?.get(method)
           : this._rules.get(pathname)?.get(method)
       // debugger
       if (listeners?.size) {

@@ -250,11 +250,10 @@ class StaticFileController {
 
   static generateDirHtml(list: Dirent<string>[], pathname: string) {
     // path.relative(router.staticFileDir)
-    const resolveDir = (name: string) => path.join(pathname, name)
     return `<ul>${list.map(item =>
       ` <li>
-      ${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}: <a target="_self" 
-      href="${resolveDir(item.name)}">${item.name}</a>
+      ${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}:  <a target="_self" 
+      href="${path.join(pathname, item.name)}">${item.name}</a>
       </li>`
     ).join('')
       }</ul>`
@@ -265,11 +264,11 @@ class StaticFileController {
     res.end(html)
   }
 
-  @router.map('get', `${router.STATIC_PATH_PEFIX}/*`)
+  @router.map('get', router.STATIC_PATH_PEFIX)
   static staticFile(req: Req, res: Res) {
     const relativePath = path.relative(router.STATIC_PATH_PEFIX, req.pathname)
     const filePath = path.join(router.staticFileDir, relativePath)
-    console.log('filePath', filePath)
+    // console.log('filePath', filePath)
     // console.log('relativePath', relativePath)
 
     if (existsSync(filePath)) {
