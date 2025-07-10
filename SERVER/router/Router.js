@@ -19,7 +19,7 @@ class Router {
   /**@type {Rules} */
   _rules = new Map()
   staticFileDir = ''
-
+  STATIC_PATH_PEFIX = '/static'
 
   /**
    * 
@@ -35,10 +35,12 @@ class Router {
 
     app.on('request',async (/**@type  {Req} */req,/**@type {ServerResponse}*/res) => {
       const { method,pathname } = req
-      const listeners = (this.staticFileDir && (pathname == '/static' || pathname.startsWith('/static/')))
-        ? this._rules.get('/static/*')?.get(method)
-        : this._rules.get(pathname)?.get(method)
-      debugger
+      // console.log('pathname',pathname)
+      const listeners =
+        (this.staticFileDir && (pathname == this.STATIC_PATH_PEFIX || pathname.startsWith(this.STATIC_PATH_PEFIX + '/')))
+          ? this._rules.get(`${this.STATIC_PATH_PEFIX}/*`)?.get(method)
+          : this._rules.get(pathname)?.get(method)
+      // debugger
       if (listeners?.size) {
         try {
           this.runListener(listeners,req,res)
@@ -77,29 +79,25 @@ class Router {
   }
   /**
    * 
-   * @param {'get'|'post'} method 
+   * @param {Method} method 
    * @param {string} path 
    * @returns 
    */
   map(method,path) {
     return (t,p) => {
-      if (typeof t[p] === 'function') this.addRule(path,method,t[p])
+      if (typeof t[p] === 'function') this.addRule(path,method,t[p].bind(t))
       else throw new Error(`${p} is not a function`)
     }
   }
   /**
-   * 
    * @param {string} path 
-   * @param {Listener} listener 
    */
   get(path) {
     return this.map('get',path)
 
   }
   /**
-   * 
    * @param {string} path 
-   * @param {Listener} listener 
    */
   post(path) {
     return this.map('post',path)

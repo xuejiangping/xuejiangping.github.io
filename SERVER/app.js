@@ -41,8 +41,10 @@ function create_http_server() {
     res.setHeader('Access-Control-Allow-Headers','*')
   }).listen(port,host,() => console.log(`服务器启动成功: ${protocol}://${host}:${port}`))
     .on('request',(req,res) => {
+      req.url = decodeURI(req.url)
+      // console.log('req.url',req.url,decodeURI(req.url))
       const { searchParams,pathname } = new URL(req.url,`${protocol}://${host}:${port}`)
-      Object.assign(req,{ pathname,searchParams })
+      Object.assign(req,{ pathname: decodeURI(pathname),searchParams })
     }).on('error',(err) => {
       console.error('服务器出错：',err)
     })

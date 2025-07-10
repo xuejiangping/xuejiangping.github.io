@@ -1,12 +1,13 @@
 // const { http_router: router } = require('../router/index.js')
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import fs from 'fs';
-import { } from 'fs/promises';
+import { createReadStream, Dirent, existsSync, statSync } from 'fs';
+
+import { readdir } from 'fs/promises';
 import { Readable } from 'stream';
 import { http_router as router } from '../router/index.js';
 import type { Req, Res } from '../router/Router.js';
 
-const path = require('path')
+import path from 'path';
 // const cheerio = require('cheerio');
 
 // const { TextDecoder } = require("util");
@@ -171,6 +172,10 @@ class ChildProcessApp {
           }
           else this.push(data)
         })
+
+        _this.app!.stderr.once('data', (data: Buffer) => {
+          this.push(data)
+        })
       }
     })
   }
@@ -232,24 +237,52 @@ class HttpRequestController {
 
 class StaticFileController {
 
-  @router.map('get', '/static/*')
-  staticFile(req: Req, res: Res) {
-    const filePath = path.join(router.staticFileDir, req.pathname.replace('/static', ''))
-    if (fs.existsSync(filePath)) {
-      const fileStream = fs.createReadStream(filePath).pipe(res)
-      // 错误处理（避免进程崩溃）
-      fileStream.on('error', (err) => {
-        console.error('文件读取错误:', err);
-        res.statusCode = 500;
-        res.end('文件读取错误,服务器错误');
-      });
+  static handleFile(res: Res, filePath: string) {
+    // res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'content-disposition': `attachment; filename=${path.basename(filePath)}` })
+    const fileStream = createReadStream(filePath).pipe(res)
+    // 错误处理（避免进程崩溃）
+    fileStream.on('error', (err) => {
+      console.error('文件读取错误:', err);
+      res.statusCode = 500;
+      res.end('文件读取错误,服务器错误');
+    });
+  }
+
+  static generateDirHtml(list: Dirent<string>[], pathname: string) {
+    // path.relative(router.staticFileDir)
+    const resolveDir = (name: string) => path.join(pathname, name)
+    return `<ul>${list.map(item =>
+      ` <li>
+      ${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}: <a target="_self" 
+      href="${resolveDir(item.name)}">${item.name}</a>
+      </li>`
+    ).join('')
+      }</ul>`
+  }
+  static async handleDir(res: Res, filePath: string, pathname: string) {
+    const list = await readdir(filePath, { 'withFileTypes': true })
+    const html = this.generateDirHtml(list, pathname)
+    res.end(html)
+  }
+
+  @router.map('get', `${router.STATIC_PATH_PEFIX}/*`)
+  static staticFile(req: Req, res: Res) {
+    const relativePath = path.relative(router.STATIC_PATH_PEFIX, req.pathname)
+    const filePath = path.join(router.staticFileDir, relativePath)
+    console.log('filePath', filePath)
+    // console.log('relativePath', relativePath)
+
+    if (existsSync(filePath)) {
+      const state = statSync(filePath)
+      if (state.isDirectory()) this.handleDir(res, filePath, req.pathname)
+      else this.handleFile(res, filePath)
+
     } else {
-      res.end(`${filePath} 文件不存在`)
+      res.end(`${filePath} 不存在`)
 
     }
 
   }
 }
-
 
 
