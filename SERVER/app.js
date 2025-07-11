@@ -21,22 +21,13 @@ const options = {
 }
 Object.assign(IncomingMessage.prototype,transformReq)
 
-process.on('uncaughtException',(err) => {
-  console.error('未捕获的异常:',err);
-  // 记录日志或发送告警，但不要直接退出进程
-});
-process.on('unhandledRejection',(reason,promise) => {
-  console.error('未处理的 Promise rejection:',reason);
-  // 记录日志或发送告警
-});
-
 
 // Object.assign(ServerResponse.prototype,transformReq)
 
 function create_http_server() {
   // 创建服务器
   const app = Server[protocol].createServer(options,(req,res) => {
-    res.setHeader('Content-Type','text/html;charset=UTF-8')
+    res.setHeader('Content-Type','text/html;charset=UTF-8');
     res.setHeader('access-control-allow-origin','*')
     res.setHeader('Access-Control-Allow-Headers','*')
   }).listen(port,host,() => console.log(`服务器启动成功: ${protocol}://${host}:${port}`))

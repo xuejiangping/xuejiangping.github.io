@@ -19,7 +19,7 @@ class Router {
   /**@type {Rules} */
   _rules = new Map()
   staticFileDir = ''
-  STATIC_PATH_PEFIX = '/static'
+  STATIC_PATH_PREFIX = '/static'
 
   /**
    * 
@@ -37,8 +37,8 @@ class Router {
       const { method,pathname } = req
       // console.log('pathname',pathname)
       const listeners =
-        (this.staticFileDir && (pathname == this.STATIC_PATH_PEFIX || pathname.startsWith(this.STATIC_PATH_PEFIX + '/')))
-          ? this._rules.get(this.STATIC_PATH_PEFIX)?.get(method)
+        (this.staticFileDir && (pathname == this.STATIC_PATH_PREFIX || pathname.startsWith(this.STATIC_PATH_PREFIX + '/')))
+          ? this._rules.get(this.STATIC_PATH_PREFIX)?.get(method)
           : this._rules.get(pathname)?.get(method)
       // debugger
       if (listeners?.size) {
@@ -46,13 +46,11 @@ class Router {
           await this.runListener(listeners,req,res)
         } catch (error) {
           console.error('出错了： ',error)
-          res.writeHead(500,'error').end(`<h1>500  server error</h1><h2>${error}</h2>`)
+          res.writeHead(500,'error').end(`<h1>500  server error</h1><pre>${error}</pre>`)
         }
 
       } else {
-        res.statusCode = 404
-        res.setHeader('Content-Type','text/html;charset=utf-8')
-        res.end('<h1>404  not found</h1>')
+        res.writeHead(404,'fuck!').end('<h1>404  not found</h1>')
       }
     })
   }
