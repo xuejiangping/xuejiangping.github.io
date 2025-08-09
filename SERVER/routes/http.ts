@@ -254,7 +254,7 @@ class StaticFileController {
   static generateDirHtml(list: Dirent<string>[], pathname: string) {
     // path.relative(router.staticFileDir)
     const backItem = { name: '..', isFile: () => false, isDirectory: () => true }
-    if (pathname != router.STATIC_PATH_PEFIX) list.unshift(backItem as Dirent<string>)
+    if (pathname != router.STATIC_PATH_PREFIX) list.unshift(backItem as Dirent<string>)
     // console.log('pathname', pathname)
     return `<table style="width:400px">${list.map(item =>
       ` <tr><td style="width:100px">${item.isFile() ? 'file' : item.isDirectory() ? 'dir' : 'unknow'}</td>  <td><a target="_self"
@@ -263,28 +263,28 @@ class StaticFileController {
     ).join('')
       }</table>`
   }
-  static async handleDir(res: Res, filePath: string, pathname: string) {
-    const list = await readdir(filePath, { 'withFileTypes': true })
+  static async handleDir(res: Res, dirPath: string, pathname: string) {
+    const list = await readdir(dirPath, { 'withFileTypes': true })
     const html = this.generateDirHtml(list, pathname)
     res.end(html)
   }
 
-  @router.map('get', router.STATIC_PATH_PEFIX)
+  @router.map('get', router.STATIC_PATH_PREFIX)
   static staticFile(req: Req, res: Res) {
 
-    const relativePath = path.relative(router.STATIC_PATH_PEFIX, req.pathname)
-    const filePath = path.join(router.staticFileDir, relativePath)
+    const relativePath = path.relative(router.STATIC_PATH_PREFIX, req.pathname)
+    const localPath = path.join(router.staticFileDir, relativePath)
     // console.log('filePath', filePath)
     // console.log('relativePath', relativePath)
 
-    if (existsSync(filePath)) {
-      const state = statSync(filePath)
-      if (state.isDirectory()) return this.handleDir(res, filePath, req.pathname)
-      else return this.handleFile(res, filePath)
+    if (existsSync(localPath)) {
+      const state = statSync(localPath)
+      if (state.isDirectory()) return this.handleDir(res, localPath, req.pathname)
+      else return this.handleFile(res, localPath)
 
 
     } else {
-      res.end(`${filePath} 不存在`)
+      res.end(`${localPath} 不存在`)
 
     }
 
